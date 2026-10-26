@@ -20,7 +20,7 @@ test("owner mengelola staf, kasir tidak bisa membuka pengaturan", async ({
   // Tambah staf baru
   await page.getByLabel("Email staf").fill(staffEmail);
   await page.getByLabel("Kata sandi sementara").fill(staffPassword);
-  await page.getByLabel("Peran").selectOption("kasir");
+  await page.locator('select[name="role"]').first().selectOption("kasir");
   await page.getByRole("button", { name: "Tambah staf" }).click();
   await expect(
     page.getByRole("status").filter({ hasText: "Staf ditambahkan" })

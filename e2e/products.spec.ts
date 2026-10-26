@@ -20,5 +20,6 @@ test("owner menambah produk", async ({ page }) => {
   await page.getByRole("button", { name: "Tambah produk" }).click();
 
   await expect(page.getByRole("cell", { name: new RegExp(name) })).toBeVisible();
-  await expect(page.getByText("Rp 15.000")).toBeVisible();
+  const row = page.getByRole("row", { name: new RegExp(name) });
+  await expect(row).toContainText("Rp 15.000");
 });

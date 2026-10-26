@@ -17,7 +17,9 @@ test("owner menambah pelanggan dan pemasok", async ({ page }) => {
   await page.getByLabel("Limit kredit (Rp)").fill("100000");
   await page.getByRole("button", { name: "Tambah pelanggan" }).click();
   await expect(page.getByRole("cell", { name: new RegExp(customer) })).toBeVisible();
-  await expect(page.getByText("Rp 100.000")).toBeVisible();
+  await expect(
+    page.getByRole("row", { name: new RegExp(customer) })
+  ).toContainText("Rp 100.000");
 
   await page.getByRole("link", { name: "Pemasok" }).click();
   await expect(page).toHaveURL("/pemasok");
@@ -25,5 +27,7 @@ test("owner menambah pelanggan dan pemasok", async ({ page }) => {
   await page.getByLabel("Termin pembayaran (hari)").fill("14");
   await page.getByRole("button", { name: "Tambah pemasok" }).click();
   await expect(page.getByRole("cell", { name: new RegExp(supplier) })).toBeVisible();
-  await expect(page.getByText("14 hari")).toBeVisible();
+  await expect(
+    page.getByRole("row", { name: new RegExp(supplier) })
+  ).toContainText("14 hari");
 });

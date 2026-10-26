@@ -25,6 +25,14 @@ export default async function ProductsPage() {
         <p className="text-muted-foreground mt-1 text-sm">
           {data.tenantName} &middot; {data.products.length} produk.
         </p>
+        {data.canWrite ? (
+          <Link
+            href="/produk/impor"
+            className="mt-2 inline-block text-sm underline-offset-4 hover:underline"
+          >
+            Impor produk dari CSV &rarr;
+          </Link>
+        ) : null}
       </div>
 
       {data.canWrite ? (
