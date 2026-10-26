@@ -65,14 +65,14 @@ isOneToOne: false
                   ]
                 },"tenants": {
                   Row: {
-                    "business_type": string,"created_at": string,"created_by": string | null,"id": string,"name": string,"settings": NonNullable<Json>,"updated_at": string
+                    "business_type": string,"client_uuid": string | null,"created_at": string,"created_by": string | null,"id": string,"name": string,"settings": NonNullable<Json>,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "business_type"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"name": string,"settings"?: NonNullable<Json>,"updated_at"?: string
+                    "business_type"?: string,"client_uuid"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"name": string,"settings"?: NonNullable<Json>,"updated_at"?: string
                   }
                   Update: {
-                    "business_type"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"name"?: string,"settings"?: NonNullable<Json>,"updated_at"?: string
+                    "business_type"?: string,"client_uuid"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"name"?: string,"settings"?: NonNullable<Json>,"updated_at"?: string
                   }
                   Relationships: [
                     
@@ -83,7 +83,12 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "has_role":
+            "create_tenant":
+{ Args: { "p_business_type": string,"p_client_uuid": string,"p_name": string,"p_outlet_name": string }; Returns: {
+              "outlet_id": string,"tenant_id": string
+            }[]
+                           },
+"has_role":
 { Args: { "roles": (string)[],"t": string }; Returns: boolean
                            },
 "is_dev":
