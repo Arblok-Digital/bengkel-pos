@@ -92,12 +92,20 @@ export default async function ProductsPage() {
                   </td>
                   <td className="p-3">
                     {data.canWrite ? (
-                      <Link
-                        href={`/produk/${product.id}`}
-                        className="underline-offset-4 hover:underline"
-                      >
-                        Ubah
-                      </Link>
+                      <span className="flex items-center gap-3">
+                        <Link
+                          href={`/produk/${product.id}/harga`}
+                          className="underline-offset-4 hover:underline"
+                        >
+                          Harga
+                        </Link>
+                        <Link
+                          href={`/produk/${product.id}`}
+                          className="underline-offset-4 hover:underline"
+                        >
+                          Ubah
+                        </Link>
+                      </span>
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}

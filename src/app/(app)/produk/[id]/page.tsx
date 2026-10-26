@@ -29,6 +29,12 @@ export default async function EditProductPage({
         <p className="text-muted-foreground mt-1 text-sm">
           {data.product.name} &middot; {data.tenantName}
         </p>
+        <Link
+          href={`/produk/${data.product.id}/harga`}
+          className="mt-2 inline-block text-sm underline-offset-4 hover:underline"
+        >
+          Atur harga tier &amp; konversi satuan &rarr;
+        </Link>
       </div>
 
       <ProductEditForm

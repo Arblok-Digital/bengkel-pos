@@ -89,6 +89,128 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"price_breaks": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"id": string,"min_qty": number,"price": number,"product_id": string,"tenant_id": string,"unit_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"min_qty": number,"price": number,"product_id": string,"tenant_id": string,"unit_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"min_qty"?: number,"price"?: number,"product_id"?: string,"tenant_id"?: string,"unit_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "price_breaks_product_same_tenant"
+      columns: ["tenant_id","product_id"]
+isOneToOne: false
+      referencedRelation: "products"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "price_breaks_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "price_breaks_unit_same_tenant"
+      columns: ["tenant_id","unit_id"]
+isOneToOne: false
+      referencedRelation: "units"
+      referencedColumns: ["tenant_id","id"]
+    }
+                  ]
+                },"price_tiers": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"id": string,"name": string,"tenant_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"name": string,"tenant_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"name"?: string,"tenant_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "price_tiers_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"product_prices": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"id": string,"price": number,"product_id": string,"tenant_id": string,"tier_id": string,"unit_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"price": number,"product_id": string,"tenant_id": string,"tier_id": string,"unit_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"price"?: number,"product_id"?: string,"tenant_id"?: string,"tier_id"?: string,"unit_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "product_prices_product_same_tenant"
+      columns: ["tenant_id","product_id"]
+isOneToOne: false
+      referencedRelation: "products"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "product_prices_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "product_prices_tier_same_tenant"
+      columns: ["tenant_id","tier_id"]
+isOneToOne: false
+      referencedRelation: "price_tiers"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "product_prices_unit_same_tenant"
+      columns: ["tenant_id","unit_id"]
+isOneToOne: false
+      referencedRelation: "units"
+      referencedColumns: ["tenant_id","id"]
+    }
+                  ]
+                },"product_units": {
+                  Row: {
+                    "barcode": string | null,"created_at": string,"created_by": string | null,"factor_to_base": number,"id": string,"product_id": string,"sell_price": number,"tenant_id": string,"unit_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "barcode"?: string | null,"created_at"?: string,"created_by"?: string | null,"factor_to_base": number,"id"?: string,"product_id": string,"sell_price"?: number,"tenant_id": string,"unit_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "barcode"?: string | null,"created_at"?: string,"created_by"?: string | null,"factor_to_base"?: number,"id"?: string,"product_id"?: string,"sell_price"?: number,"tenant_id"?: string,"unit_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "product_units_product_same_tenant"
+      columns: ["tenant_id","product_id"]
+isOneToOne: false
+      referencedRelation: "products"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "product_units_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "product_units_unit_same_tenant"
+      columns: ["tenant_id","unit_id"]
+isOneToOne: false
+      referencedRelation: "units"
+      referencedColumns: ["tenant_id","id"]
+    }
+                  ]
                 },"products": {
                   Row: {
                     "active": boolean,"barcode": string | null,"base_unit_id": string | null,"category_id": string | null,"cost_price": number,"created_at": string,"created_by": string | null,"id": string,"image_url": string | null,"kind": string,"min_stock": number,"name": string,"sell_price": number,"sku": string | null,"tenant_id": string,"track_stock": boolean,"updated_at": string
@@ -174,6 +296,9 @@ isOneToOne: false
                            },
 "is_member":
 { Args: { "t": string }; Returns: boolean
+                           },
+"resolve_price":
+{ Args: { "p_product_id": string,"p_qty": number,"p_tenant_id": string,"p_tier_id": string,"p_unit_id": string }; Returns: number
                            }
           }
           Enums: {

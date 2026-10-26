@@ -85,3 +85,36 @@ export const deleteProductSchema = z.object({
   tenantId: z.guid(),
   id: z.guid(),
 });
+
+export const addProductUnitSchema = z.object({
+  tenantId: z.guid(),
+  productId: z.guid(),
+  unitId: z.guid(),
+  factorToBase: z.coerce
+    .number()
+    .positive("Faktor konversi harus lebih dari 0"),
+  sellPrice: z.coerce.number().int().min(0, "Harga tidak boleh negatif"),
+  barcode: z.string().trim().max(60).optional(),
+});
+
+export const deletePricingRowSchema = z.object({
+  tenantId: z.guid(),
+  id: z.guid(),
+  productId: z.guid(),
+});
+
+export const upsertProductPriceSchema = z.object({
+  tenantId: z.guid(),
+  productId: z.guid(),
+  tierId: z.guid(),
+  unitId: z.guid(),
+  price: z.coerce.number().int().min(0, "Harga tidak boleh negatif"),
+});
+
+export const addPriceBreakSchema = z.object({
+  tenantId: z.guid(),
+  productId: z.guid(),
+  unitId: z.guid(),
+  minQty: z.coerce.number().positive("Minimal qty harus lebih dari 0"),
+  price: z.coerce.number().int().min(0, "Harga tidak boleh negatif"),
+});

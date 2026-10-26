@@ -168,3 +168,100 @@ export async function getProductForEdit(
     product: toProductRow(data as RawProduct, categoryNames, unitNames),
   };
 }
+
+export type TierItem = { id: string; name: string };
+
+export type ProductUnitRow = {
+  id: string;
+  unitId: string;
+  unitName: string;
+  factorToBase: number;
+  sellPrice: number;
+};
+
+export type TierPriceRow = {
+  id: string;
+  tierId: string;
+  tierName: string;
+  unitId: string;
+  unitName: string;
+  price: number;
+};
+
+export type PriceBreakRow = {
+  id: string;
+  unitId: string;
+  unitName: string;
+  minQty: number;
+  price: number;
+};
+
+export type PricingData = ProductEditData & {
+  tiers: TierItem[];
+  productUnits: ProductUnitRow[];
+  tierPrices: TierPriceRow[];
+  priceBreaks: PriceBreakRow[];
+};
+
+export async function getProductPricing(
+  id: string
+): Promise<PricingData | null> {
+  const base = await getProductForEdit(id);
+  if (!base) return null;
+
+  const supabase = await createClient();
+  const unitNames = new Map(base.units.map((u) => [u.id, u.name]));
+
+  const [tiersRes, unitsRes, pricesRes, breaksRes] = await Promise.all([
+    supabase
+      .from("price_tiers")
+      .select("id, name")
+      .eq("tenant_id", base.tenantId)
+      .order("name"),
+    supabase
+      .from("product_units")
+      .select("id, unit_id, factor_to_base, sell_price")
+      .eq("tenant_id", base.tenantId)
+      .eq("product_id", id),
+    supabase
+      .from("product_prices")
+      .select("id, tier_id, unit_id, price")
+      .eq("tenant_id", base.tenantId)
+      .eq("product_id", id),
+    supabase
+      .from("price_breaks")
+      .select("id, unit_id, min_qty, price")
+      .eq("tenant_id", base.tenantId)
+      .eq("product_id", id)
+      .order("min_qty"),
+  ]);
+
+  const tiers = tiersRes.data ?? [];
+
+  const productUnits: ProductUnitRow[] = (unitsRes.data ?? []).map((row) => ({
+    id: row.id,
+    unitId: row.unit_id,
+    unitName: unitNames.get(row.unit_id) ?? "—",
+    factorToBase: Number(row.factor_to_base),
+    sellPrice: row.sell_price,
+  }));
+
+  const tierPrices: TierPriceRow[] = (pricesRes.data ?? []).map((row) => ({
+    id: row.id,
+    tierId: row.tier_id,
+    tierName: tiers.find((t) => t.id === row.tier_id)?.name ?? "—",
+    unitId: row.unit_id,
+    unitName: unitNames.get(row.unit_id) ?? "—",
+    price: row.price,
+  }));
+
+  const priceBreaks: PriceBreakRow[] = (breaksRes.data ?? []).map((row) => ({
+    id: row.id,
+    unitId: row.unit_id,
+    unitName: unitNames.get(row.unit_id) ?? "—",
+    minQty: Number(row.min_qty),
+    price: row.price,
+  }));
+
+  return { ...base, tiers, productUnits, tierPrices, priceBreaks };
+}
