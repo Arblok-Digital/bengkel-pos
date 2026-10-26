@@ -5,6 +5,8 @@ import {
   getManagerTenants,
   getStaff,
 } from "@/features/staff/queries";
+import { getReceiptSettingsForTenant } from "@/features/sales/queries";
+import { ReceiptSettingsForm } from "./receipt-settings-form";
 import { StaffManager } from "./staff-manager";
 
 export default async function SettingsPage() {
@@ -21,6 +23,9 @@ export default async function SettingsPage() {
     tenants.map(async (tenant) => ({
       ...tenant,
       staff: await getStaff(tenant.tenantId, currentUserId),
+      receipt:
+        (await getReceiptSettingsForTenant(tenant.tenantId)) ??
+        null,
     }))
   );
 
@@ -29,18 +34,26 @@ export default async function SettingsPage() {
       <div>
         <h1 className="text-2xl font-bold">Pengaturan</h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Kelola staf, peran, dan status aktif. Hanya pemilik/admin yang dapat
-          membuka halaman ini.
+          Kelola staf, peran, status aktif, dan tampilan struk. Hanya
+          pemilik/admin yang dapat membuka halaman ini.
         </p>
       </div>
 
       {sections.map((section) => (
-        <StaffManager
-          key={section.tenantId}
-          tenantId={section.tenantId}
-          tenantName={section.tenantName}
-          staff={section.staff}
-        />
+        <div key={section.tenantId} className="flex flex-col gap-6">
+          <StaffManager
+            tenantId={section.tenantId}
+            tenantName={section.tenantName}
+            staff={section.staff}
+          />
+          {section.receipt ? (
+            <ReceiptSettingsForm
+              tenantId={section.tenantId}
+              tenantName={section.tenantName}
+              settings={section.receipt}
+            />
+          ) : null}
+        </div>
       ))}
     </div>
   );

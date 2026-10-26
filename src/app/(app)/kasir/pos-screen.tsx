@@ -1012,6 +1012,12 @@ export function PosScreen({ data }: { data: PosData }) {
                   <dd>{formatRupiah(state.success.changeAmount)}</dd>
                 </div>
               </dl>
+              <Link
+                href={`/struk/${state.success.saleId}`}
+                className="mt-3 inline-flex h-11 items-center rounded-md border border-green-700/40 px-3 font-medium text-green-800 hover:bg-green-100"
+              >
+                Lihat &amp; cetak struk
+              </Link>
             </div>
           ) : null}
         </aside>

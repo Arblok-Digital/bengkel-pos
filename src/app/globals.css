@@ -128,3 +128,18 @@
     @apply font-sans;
   }
 }
+@media print {
+  @page {
+    margin: 4mm;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  .receipt-paper {
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+}

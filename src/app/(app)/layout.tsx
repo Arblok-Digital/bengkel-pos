@@ -23,7 +23,7 @@ export default async function AppLayout({
 
   return (
     <div className="min-h-screen">
-      <header className="flex items-center justify-between gap-4 border-b px-6 py-3">
+      <header className="flex items-center justify-between gap-4 border-b px-6 py-3 print:hidden">
         <span className="font-semibold">Kasir Bengkel &amp; Toko Bangunan</span>
         <div className="flex items-center gap-4 text-sm">
           <nav className="flex items-center gap-4">
@@ -32,6 +32,9 @@ export default async function AppLayout({
             </Link>
             <Link href="/kasir" className="hover:underline">
               Kasir
+            </Link>
+            <Link href="/penjualan" className="hover:underline">
+              Penjualan
             </Link>
             <Link href="/katalog" className="hover:underline">
               Katalog
@@ -57,7 +60,7 @@ export default async function AppLayout({
           <LogoutButton />
         </div>
       </header>
-      <main className="p-6">{children}</main>
+      <main className="p-6 print:p-0">{children}</main>
     </div>
   );
 }
