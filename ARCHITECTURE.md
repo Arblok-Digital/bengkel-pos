@@ -24,7 +24,7 @@ Target pengguna: pemilik UMKM, kasir, mekanik, admin gudang. Bahasa UI: **Indone
 
 | Area | Keputusan | Alasan |
 |---|---|---|
-| Framework | Next.js 15 (App Router) + TypeScript strict | Satu codebase fullstack |
+| Framework | Next.js 16 (App Router) + TypeScript strict | Satu codebase fullstack |
 | UI | Tailwind + shadcn/ui + lucide-react | Cepat, konsisten, touch-friendly |
 | Database | Supabase Postgres | RLS bawaan, auth, murah |
 | Auth | Supabase Auth (email+password; PIN kasir fase lanjut) | Sederhana |
