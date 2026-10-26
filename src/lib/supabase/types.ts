@@ -23,7 +23,33 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "categories": {
+            "cash_shifts": {
+                  Row: {
+                    "cashier_id": string,"client_uuid": string,"close_client_uuid": string | null,"closed_at": string | null,"closing_cash_counted": number | null,"created_at": string,"created_by": string | null,"difference": number | null,"expected_cash": number | null,"id": string,"note": string | null,"opened_at": string,"opening_cash": number,"outlet_id": string,"tenant_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cashier_id": string,"client_uuid": string,"close_client_uuid"?: string | null,"closed_at"?: string | null,"closing_cash_counted"?: number | null,"created_at"?: string,"created_by"?: string | null,"difference"?: number | null,"expected_cash"?: number | null,"id"?: string,"note"?: string | null,"opened_at"?: string,"opening_cash": number,"outlet_id": string,"tenant_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "cashier_id"?: string,"client_uuid"?: string,"close_client_uuid"?: string | null,"closed_at"?: string | null,"closing_cash_counted"?: number | null,"created_at"?: string,"created_by"?: string | null,"difference"?: number | null,"expected_cash"?: number | null,"id"?: string,"note"?: string | null,"opened_at"?: string,"opening_cash"?: number,"outlet_id"?: string,"tenant_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "cash_shifts_outlet_same_tenant"
+      columns: ["tenant_id","outlet_id"]
+isOneToOne: false
+      referencedRelation: "outlets"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "cash_shifts_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"categories": {
                   Row: {
                     "created_at": string,"created_by": string | null,"id": string,"name": string,"parent_id": string | null,"tenant_id": string,"updated_at": string
                   }
@@ -480,6 +506,9 @@ isOneToOne: false
             "adjust_stock":
 { Args: { "p_client_uuid": string,"p_outlet_id": string,"p_product_id": string,"p_qty_base": number,"p_reason": string,"p_tenant_id": string }; Returns: string
                            },
+"close_cash_shift":
+{ Args: { "p_client_uuid": string,"p_closing_cash_counted": number,"p_note": string,"p_shift_id": string }; Returns: Json
+                           },
 "create_stock_opname":
 { Args: { "p_note": string,"p_outlet_id": string,"p_tenant_id": string }; Returns: string
                            },
@@ -496,6 +525,9 @@ isOneToOne: false
                            },
 "is_member":
 { Args: { "t": string }; Returns: boolean
+                           },
+"open_cash_shift":
+{ Args: { "p_client_uuid": string,"p_opening_cash": number,"p_outlet_id": string,"p_tenant_id": string }; Returns: string
                            },
 "post_stock_opname":
 { Args: { "p_opname_id": string }; Returns: number

@@ -30,6 +30,9 @@ export default async function AppLayout({
             <Link href="/" className="hover:underline">
               Beranda
             </Link>
+            <Link href="/kasir" className="hover:underline">
+              Kasir
+            </Link>
             <Link href="/katalog" className="hover:underline">
               Katalog
             </Link>
