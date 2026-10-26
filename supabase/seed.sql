@@ -1,0 +1,2 @@
+-- seed.sql bengkel-pos
+-- Data awal diisi per kebutuhan fase (ArchiM 4.x). T0.2 belum butuh data seed.
