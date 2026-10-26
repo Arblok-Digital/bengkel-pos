@@ -1,8 +1,10 @@
--- Tes pgTAP T0.2: isolasi tenant (RLS) + has_role
+-- Tes pgTAP T0.2: isolasi tenant (RLS) + has_role + manajemen privilege
 -- Jalankan lewat: supabase test db
+-- Semua pengujian berjalan sebagai role `authenticated` / `anon`
+-- (via SET LOCAL role + SET LOCAL request.jwt.claims), BUKAN sebagai postgres.
 
 begin;
-select plan(14);
+select plan(25);
 
 -- ─── data uji ────────────────────────────────────────────────────────────────
 create extension if not exists pgtap with schema extensions;
@@ -24,12 +26,6 @@ values
   ('bbbbbbb1-0000-0000-0000-000000000001', 'aaaaaaa1-0000-0000-0000-000000000001', 'Outlet A'),
   ('bbbbbbb1-0000-0000-0000-000000000002', 'aaaaaaa1-0000-0000-0000-000000000002', 'Outlet B');
 
--- user A = owner tenant 1; user B = kasir tenant 2
-insert into public.memberships (tenant_id, user_id, role)
-values
-  ('aaaaaaa1-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'owner'),
-  ('aaaaaaa1-0000-0000-0000-000000000002', '22222222-2222-2222-2222-222222222222', 'kasir');
-
 -- ─── helper sesi ─────────────────────────────────────────────────────────────
 create or replace function tests_set_user(p_user uuid) returns void
   language plpgsql as $$
@@ -39,8 +35,27 @@ create or replace function tests_set_user(p_user uuid) returns void
   end;
   $$;
 
--- ─── 1. user tenant A melihat tenant A ───────────────────────────────────────
+create or replace function tests_set_anon() returns void
+  language plpgsql as $$
+  begin
+    execute format('set local "request.jwt.claims" to %L', json_build_object('role', 'anon'));
+    execute 'set local role anon';
+  end;
+  $$;
+
+-- memberships: user A = owner tenant 1; user B = kasir tenant 2
+-- (di-insert sebagai postgres/superuser karena ini pembenih data uji)
+insert into public.memberships (tenant_id, user_id, role)
+values
+  ('aaaaaaa1-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'owner'),
+  ('aaaaaaa1-0000-0000-0000-000000000002', '22222222-2222-2222-2222-222222222222', 'kasir');
+
+-- ─── 1. sesi sebagai role authenticated, bukan postgres ──────────────────────
 select tests_set_user('11111111-1111-1111-1111-111111111111');
+
+select is(
+  current_user, 'authenticated', 'sesi uji berjalan sebagai role authenticated'
+);
 
 select is(
   count(*)::int, 1, 'user A melihat tepat 1 tenant (miliknya sendiri)'
@@ -59,7 +74,7 @@ select is(
   count(*)::int, 0, 'user A tidak bisa membaca outlet tenant B'
 ) from public.outlets where tenant_id = 'aaaaaaa1-0000-0000-0000-000000000002';
 
--- ─── 3. user A tidak bisa uji insert dengan tenant_id orang lain ─────────────
+-- ─── 3. user A tidak bisa insert dengan tenant_id orang lain ─────────────────
 select throws_ok(
   $query$
     insert into public.outlets (tenant_id, name)
@@ -91,7 +106,7 @@ select is(
   count(*)::int, 0, 'user B tidak bisa membaca tenant A'
 ) from public.tenants where id = 'aaaaaaa1-0000-0000-0000-000000000001';
 
--- ─── 6. kasir TIDAK boleh insert/mengubah memberships (butuh owner/admin) ────
+-- ─── 6. kasir TIDAK boleh membuat memberships (butuh owner/admin) ────────────
 select throws_ok(
   $query$
     insert into public.memberships (tenant_id, user_id, role)
@@ -128,14 +143,81 @@ select is(
 );
 
 -- ─── 8. user B tidak bisa update memberships tenant-nya sendiri ──────────────
-with updated as (
-  update public.memberships set role = 'owner'
-  where tenant_id = 'aaaaaaa1-0000-0000-0000-000000000002'
-  returning role
-)
+select tests_set_user('22222222-2222-2222-2222-222222222222');
+select throws_ok(
+  $query$
+    update public.memberships set role = 'owner'
+    where tenant_id = 'aaaaaaa1-0000-0000-0000-000000000002'
+  $query$,
+  '42501',
+  'new row violates row-level security policy for table "memberships"',
+  'kasir tidak bisa menaikkan rol dirinya ke owner'
+);
+
+-- ─── 9. privilege fungsi: is_member/has_role hanya untuk authenticated ──────
+-- (pemanggilan di sini sebagai authenticated, yang memang miliki EXECUTE)
 select is(
-  count(*)::int, 0, 'kasir tidak bisa menaikkan rol dirinya ke owner'
-) from updated;
+  has_function_privilege('authenticated', 'public.is_member(uuid)', 'execute'),
+  true,
+  'public.is_member(uuid): authenticated punya EXECUTE'
+);
+select is(
+  has_function_privilege('authenticated', 'public.has_role(uuid,text[])', 'execute'),
+  true,
+  'public.has_role(uuid,text[]): authenticated punya EXECUTE'
+);
+select is(
+  has_function_privilege('anon', 'public.is_member(uuid)', 'execute'),
+  false,
+  'public.is_member(uuid): anon TIDAK punya EXECUTE'
+);
+select is(
+  has_function_privilege('anon', 'public.has_role(uuid,text[])', 'execute'),
+  false,
+  'public.has_role(uuid,text[]): anon TIDAK punya EXECUTE'
+);
+
+-- ─── 10. role anon: ditolak di semua tabel ───────────────────────────────────
+select tests_set_anon();
+
+select is(
+  current_user, 'anon', 'sesi uji berjalan sebagai role anon'
+);
+
+select throws_ok(
+  $query$ select count(*) from public.tenants $query$,
+  '42501',
+  'permission denied for table tenants',
+  'anon tidak bisa membaca tabel tenants'
+);
+
+select throws_ok(
+  $query$ select count(*) from public.outlets $query$,
+  '42501',
+  'permission denied for table outlets',
+  'anon tidak bisa membaca tabel outlets'
+);
+
+select throws_ok(
+  $query$ select count(*) from public.memberships $query$,
+  '42501',
+  'permission denied for table memberships',
+  'anon tidak bisa membaca tabel memberships'
+);
+
+select throws_ok(
+  $query$ insert into public.outlets (tenant_id, name) values ('aaaaaaa1-0000-0000-0000-000000000001', 'Outlet anon') $query$,
+  '42501',
+  'permission denied for table outlets',
+  'anon tidak bisa insert ke tabel outlets'
+);
+
+select throws_ok(
+  $query$ select public.is_member('aaaaaaa1-0000-0000-0000-000000000001'::uuid) $query$,
+  '42501',
+  'permission denied for function is_member',
+  'anon tidak bisa memanggil is_member langsung'
+);
 
 select * from finish();
 rollback;

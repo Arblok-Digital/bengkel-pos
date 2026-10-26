@@ -104,18 +104,34 @@ alter table public.tenants enable row level security;
 alter table public.outlets enable row level security;
 alter table public.memberships enable row level security;
 
--- Policy tenant_isolation
+-- Hak: anon TIDAK dibolehkan apa pun pada tabel ini ( WARN+bukti di tes ),
+-- service_role hanya menjalankan server. Default privileges supabase memberi
+-- DML ke anon+authenticated; kita cabut untuk anon.
+revoke all on public.tenants from anon;
+revoke all on public.outlets from anon;
+revoke all on public.memberships from anon;
+
+-- Helper functions: hanya authenticated yang boleh memanggil.
+revoke execute on function public.is_member(uuid) from public, anon;
+revoke execute on function public.has_role(uuid, text[]) from public, anon;
+grant execute on function public.is_member(uuid) to authenticated;
+grant execute on function public.has_role(uuid, text[]) to authenticated;
+
+-- Policy tenant_isolation (semua role target: authenticated)
 create policy tenant_isolation on public.tenants
-  for all using (public.is_member(id))
+  for all to authenticated
+  using (public.is_member(id))
   with check (public.is_member(id));
 
 create policy tenant_isolation on public.outlets
-  for all using (public.is_member(tenant_id))
+  for all to authenticated
+  using (public.is_member(tenant_id))
   with check (public.is_member(tenant_id));
 
 create policy tenant_isolation on public.memberships
-  for all using (public.is_member(tenant_id))
-  with check (public.is_member(tenant_id) and has_role(tenant_id, array['owner', 'admin']));
+  for all to authenticated
+  using (public.is_member(tenant_id))
+  with check (public.is_member(tenant_id) and public.has_role(tenant_id, array['owner', 'admin']));
 
 -- Indeks berawalan tenant_id (aturan keras Bagian 3)
 create index idx_memberships_tenant_user on public.memberships (tenant_id, user_id);
