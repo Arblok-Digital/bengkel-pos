@@ -49,6 +49,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"customers": {
+                  Row: {
+                    "active": boolean,"address": string | null,"created_at": string,"created_by": string | null,"credit_limit": number,"id": string,"name": string,"notes": string | null,"phone": string | null,"tenant_id": string,"tier_id": string | null,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "active"?: boolean,"address"?: string | null,"created_at"?: string,"created_by"?: string | null,"credit_limit"?: number,"id"?: string,"name": string,"notes"?: string | null,"phone"?: string | null,"tenant_id": string,"tier_id"?: string | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "active"?: boolean,"address"?: string | null,"created_at"?: string,"created_by"?: string | null,"credit_limit"?: number,"id"?: string,"name"?: string,"notes"?: string | null,"phone"?: string | null,"tenant_id"?: string,"tier_id"?: string | null,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "customers_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "customers_tier_same_tenant"
+      columns: ["tenant_id","tier_id"]
+isOneToOne: false
+      referencedRelation: "price_tiers"
+      referencedColumns: ["tenant_id","id"]
+    }
+                  ]
                 },"memberships": {
                   Row: {
                     "active": boolean,"created_at": string,"created_by": string | null,"id": string,"outlet_ids": (string)[],"role": string,"tenant_id": string,"updated_at": string,"user_id": string
@@ -241,6 +267,26 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "units"
       referencedColumns: ["tenant_id","id"]
+    }
+                  ]
+                },"suppliers": {
+                  Row: {
+                    "active": boolean,"address": string | null,"created_at": string,"created_by": string | null,"id": string,"name": string,"payment_terms_days": number,"phone": string | null,"tenant_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "active"?: boolean,"address"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"name": string,"payment_terms_days"?: number,"phone"?: string | null,"tenant_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "active"?: boolean,"address"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"name"?: string,"payment_terms_days"?: number,"phone"?: string | null,"tenant_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "suppliers_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
     }
                   ]
                 },"tenants": {
