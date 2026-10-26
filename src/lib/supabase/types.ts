@@ -23,7 +23,27 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "cash_shifts": {
+            "audit_logs": {
+                  Row: {
+                    "action": string,"after": Json | null,"before": Json | null,"created_at": string,"entity": string,"entity_id": string,"id": string,"reason": string | null,"tenant_id": string,"user_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"after"?: Json | null,"before"?: Json | null,"created_at"?: string,"entity": string,"entity_id": string,"id"?: string,"reason"?: string | null,"tenant_id": string,"user_id"?: string | null
+                  }
+                  Update: {
+                    "action"?: string,"after"?: Json | null,"before"?: Json | null,"created_at"?: string,"entity"?: string,"entity_id"?: string,"id"?: string,"reason"?: string | null,"tenant_id"?: string,"user_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "audit_logs_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"cash_shifts": {
                   Row: {
                     "cashier_id": string,"client_uuid": string,"close_client_uuid": string | null,"closed_at": string | null,"closing_cash_counted": number | null,"created_at": string,"created_by": string | null,"difference": number | null,"expected_cash": number | null,"id": string,"note": string | null,"opened_at": string,"opening_cash": number,"outlet_id": string,"tenant_id": string,"updated_at": string
                   }
@@ -135,6 +155,32 @@ isOneToOne: false
                   Relationships: [
                     {
       foreignKeyName: "outlets_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"payments": {
+                  Row: {
+                    "amount": number,"created_at": string,"id": string,"method": string,"reference": string | null,"sale_id": string,"tenant_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "amount": number,"created_at"?: string,"id"?: string,"method": string,"reference"?: string | null,"sale_id": string,"tenant_id": string
+                  }
+                  Update: {
+                    "amount"?: number,"created_at"?: string,"id"?: string,"method"?: string,"reference"?: string | null,"sale_id"?: string,"tenant_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "payments_sale_same_tenant"
+      columns: ["tenant_id","sale_id"]
+isOneToOne: false
+      referencedRelation: "sales"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "payments_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false
       referencedRelation: "tenants"
@@ -293,6 +339,114 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "units"
       referencedColumns: ["tenant_id","id"]
+    }
+                  ]
+                },"receivables": {
+                  Row: {
+                    "amount": number,"created_at": string,"created_by": string | null,"customer_id": string,"due_date": string,"id": string,"sale_id": string,"status": string,"tenant_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "amount": number,"created_at"?: string,"created_by"?: string | null,"customer_id": string,"due_date": string,"id"?: string,"sale_id": string,"status"?: string,"tenant_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "amount"?: number,"created_at"?: string,"created_by"?: string | null,"customer_id"?: string,"due_date"?: string,"id"?: string,"sale_id"?: string,"status"?: string,"tenant_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "receivables_customer_same_tenant"
+      columns: ["tenant_id","customer_id"]
+isOneToOne: false
+      referencedRelation: "customers"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "receivables_sale_same_tenant"
+      columns: ["tenant_id","sale_id"]
+isOneToOne: true
+      referencedRelation: "sales"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "receivables_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"sale_items": {
+                  Row: {
+                    "created_at": string,"discount": number,"id": string,"line_total": number,"mechanic_id": string | null,"note": string | null,"product_id": string,"qty": number,"qty_base": number,"sale_id": string,"tenant_id": string,"unit_cost": number,"unit_id": string,"unit_price": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"discount"?: number,"id"?: string,"line_total": number,"mechanic_id"?: string | null,"note"?: string | null,"product_id": string,"qty": number,"qty_base": number,"sale_id": string,"tenant_id": string,"unit_cost"?: number,"unit_id": string,"unit_price": number
+                  }
+                  Update: {
+                    "created_at"?: string,"discount"?: number,"id"?: string,"line_total"?: number,"mechanic_id"?: string | null,"note"?: string | null,"product_id"?: string,"qty"?: number,"qty_base"?: number,"sale_id"?: string,"tenant_id"?: string,"unit_cost"?: number,"unit_id"?: string,"unit_price"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "sale_items_product_same_tenant"
+      columns: ["tenant_id","product_id"]
+isOneToOne: false
+      referencedRelation: "products"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "sale_items_sale_same_tenant"
+      columns: ["tenant_id","sale_id"]
+isOneToOne: false
+      referencedRelation: "sales"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "sale_items_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "sale_items_unit_same_tenant"
+      columns: ["tenant_id","unit_id"]
+isOneToOne: false
+      referencedRelation: "units"
+      referencedColumns: ["tenant_id","id"]
+    }
+                  ]
+                },"sales": {
+                  Row: {
+                    "cashier_id": string,"change_amount": number,"client_uuid": string,"created_at": string,"created_by": string | null,"customer_id": string | null,"discount": number,"id": string,"invoice_no": string,"note": string | null,"outlet_id": string,"paid_amount": number,"shift_id": string | null,"sold_at": string,"status": string,"subtotal": number,"tax": number,"tenant_id": string,"total": number,"updated_at": string,"vehicle_id": string | null,"work_order_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cashier_id": string,"change_amount"?: number,"client_uuid": string,"created_at"?: string,"created_by"?: string | null,"customer_id"?: string | null,"discount"?: number,"id"?: string,"invoice_no": string,"note"?: string | null,"outlet_id": string,"paid_amount": number,"shift_id"?: string | null,"sold_at"?: string,"status": string,"subtotal": number,"tax"?: number,"tenant_id": string,"total": number,"updated_at"?: string,"vehicle_id"?: string | null,"work_order_id"?: string | null
+                  }
+                  Update: {
+                    "cashier_id"?: string,"change_amount"?: number,"client_uuid"?: string,"created_at"?: string,"created_by"?: string | null,"customer_id"?: string | null,"discount"?: number,"id"?: string,"invoice_no"?: string,"note"?: string | null,"outlet_id"?: string,"paid_amount"?: number,"shift_id"?: string | null,"sold_at"?: string,"status"?: string,"subtotal"?: number,"tax"?: number,"tenant_id"?: string,"total"?: number,"updated_at"?: string,"vehicle_id"?: string | null,"work_order_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "sales_customer_same_tenant"
+      columns: ["tenant_id","customer_id"]
+isOneToOne: false
+      referencedRelation: "customers"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "sales_outlet_same_tenant"
+      columns: ["tenant_id","outlet_id"]
+isOneToOne: false
+      referencedRelation: "outlets"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "sales_shift_same_tenant"
+      columns: ["tenant_id","shift_id"]
+isOneToOne: false
+      referencedRelation: "cash_shifts"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "sales_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
     }
                   ]
                 },"stock_levels": {
@@ -509,6 +663,9 @@ isOneToOne: false
 "close_cash_shift":
 { Args: { "p_client_uuid": string,"p_closing_cash_counted": number,"p_note": string,"p_shift_id": string }; Returns: Json
                            },
+"create_sale":
+{ Args: { "p_client_uuid": string,"p_customer_id": string,"p_items": Json,"p_note": string,"p_outlet_id": string,"p_payments": Json,"p_shift_id": string,"p_tenant_id": string,"p_vehicle_id": string,"p_work_order_id": string }; Returns: Json
+                           },
 "create_stock_opname":
 { Args: { "p_note": string,"p_outlet_id": string,"p_tenant_id": string }; Returns: string
                            },
@@ -516,6 +673,9 @@ isOneToOne: false
 { Args: { "p_business_type": string,"p_client_uuid": string,"p_name": string,"p_outlet_name": string }; Returns: {
               "outlet_id": string,"tenant_id": string
             }[]
+                           },
+"generate_invoice_no":
+{ Args: { "p_outlet_id": string,"p_tenant_id": string }; Returns: string
                            },
 "has_role":
 { Args: { "roles": (string)[],"t": string }; Returns: boolean
