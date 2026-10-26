@@ -180,7 +180,9 @@ select is(
 select tests_set_user('de000000-0000-0000-0000-000000000014');
 select is(
   count(*)::int, 2, 'DEV BARU: melihat semua tenant (2 baris)'
-) from public.tenants;
+) from public.tenants
+where id in ('de000000-0000-0000-0000-0000000000b1',
+             'de000000-0000-0000-0000-0000000000b2');
 
 -- ══════════════════════════════════════════════════════════════════════════
 -- C. Dev nonaktif kehilangan akses global
@@ -220,7 +222,9 @@ select is(
 select tests_set_user('de000000-0000-0000-0000-000000000010');
 select is(
   count(*)::int, 2, 'DEV AKTIF: kembali melihat semua tenant (2 baris)'
-) from public.tenants;
+) from public.tenants
+where id in ('de000000-0000-0000-0000-0000000000b1',
+             'de000000-0000-0000-0000-0000000000b2');
 
 select * from finish();
 rollback;

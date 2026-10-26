@@ -4,7 +4,6 @@ import {
   getMyTenants,
   type BusinessType,
 } from "@/features/tenant/queries";
-import { LogoutButton } from "./logout-button";
 
 const businessLabel: Record<BusinessType, string> = {
   bengkel: "Bengkel",
@@ -37,7 +36,6 @@ export default async function DashboardPage() {
             Usaha yang Anda kelola.
           </p>
         </div>
-        <LogoutButton />
       </div>
 
       <div className="flex flex-col gap-4">

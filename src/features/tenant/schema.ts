@@ -3,7 +3,7 @@ import { z } from "zod";
 export const businessTypeSchema = z.enum(["bengkel", "toko_bangunan", "both"]);
 
 export const onboardingSchema = z.object({
-  clientUuid: z.string().uuid("client_uuid tidak valid"),
+  clientUuid: z.guid("client_uuid tidak valid"),
   name: z
     .string()
     .trim()

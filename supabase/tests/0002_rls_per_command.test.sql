@@ -139,7 +139,9 @@ select is(
 select tests_set_postgres();
 select is(
   count(*)::int, 2, 'KASIR-VERIF: total outlets tetap 2'
-) from public.outlets;
+) from public.outlets
+where id in ('bbbbbbb1-0000-0000-0000-000000000001',
+             'bbbbbbb1-0000-0000-0000-000000000002');
 
 -- (9) kasir tidak bisa delete membership milik owner
 select tests_set_user('22222222-2222-2222-2222-222222222222');

@@ -73,6 +73,22 @@ cd /mnt/c/Users/ARBLOK/projects/bengkel && \
   gen types typescript --local > src/lib/supabase/types.ts
 ```
 
+### Workaround port WSL2 (jika `127.0.0.1:55321` menolak koneksi)
+
+Setelah container Supabase restart, port yang dipublikasikan Docker kadang tidak ikut diteruskan ke Windows. Cek dengan `Test-NetConnection 127.0.0.1 -Port 55321`. Jika gagal tetapi `curl` dari WSL berhasil, jalankan relay di WSL pada port baru dan arahkan `.env.local` ke port itu:
+
+```bash
+# WSL — biarkan berjalan selama sesi dev
+python3 /mnt/c/Users/ARBLOK/projects/bengkel/scripts/wsl-port-relay.py 56021 127.0.0.1 55321
+```
+
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:56021
+```
+
+Restart `npm run dev` setelah mengubah env. Ini hanya workaround lingkungan WSL2,
+bukan bagian aplikasi.
+
 ## Larangan (ringkas)
 
 - Dilarang `npm install -g` Apa pun, atau `npm install`/install node_modules dari WSL.

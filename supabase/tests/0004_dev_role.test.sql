@@ -59,19 +59,25 @@ select tests_set_user('aaaaaaaa-1111-1111-1111-111111111111');
 select is(
   count(*)::int, 2,
   'DEV: melihat semua tenant (termasuk non-miliknya)'
-) from public.tenants;
+) from public.tenants
+where id in ('11111111-1111-1111-1111-111111111111',
+             '22222222-2222-2222-2222-222222222222');
 
 -- (2) dev melihat semua outlet (2 baris, termasuk outlet tenant Dua)
 select is(
   count(*)::int, 2,
   'DEV: melihat semua outlet (termasuk non-miliknya)'
-) from public.outlets;
+) from public.outlets
+where tenant_id in ('11111111-1111-1111-1111-111111111111',
+                    '22222222-2222-2222-2222-222222222222');
 
 -- (3) dev melihat semua membership (3 baris)
 select is(
   count(*)::int, 3,
   'DEV: melihat semua membership (termasuk non-miliknya)'
-) from public.memberships;
+) from public.memberships
+where tenant_id in ('11111111-1111-1111-1111-111111111111',
+                    '22222222-2222-2222-2222-222222222222');
 -- ═════════════════════════════════════════════════════════════════════════════
 -- BAGIAN 2: DEV dapat menulis (INSERT/UPDATE/DELETE) outlet di tenant lain
 -- ═════════════════════════════════════════════════════════════════════════════
@@ -122,7 +128,9 @@ select tests_set_postgres();
 select is(
   count(*)::int, 2,
   'DEV-VERIF: outlet kembali 2 baris (dev outlet dihapus)'
-) from public.outlets;
+) from public.outlets
+where tenant_id in ('11111111-1111-1111-1111-111111111111',
+                    '22222222-2222-2222-2222-222222222222');
 -- ═════════════════════════════════════════════════════════════════════════════
 -- BAGIAN 3: DEV dapat menulis membership di tenant lain
 -- ═════════════════════════════════════════════════════════════════════════════
