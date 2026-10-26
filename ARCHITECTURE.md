@@ -159,13 +159,22 @@ language sql stable security definer set search_path = public as $$
   )
 $$;
 
+-- Baca: untuk semua member tenant
 alter table products enable row level security;
-create policy tenant_isolation on products for all
-  using (public.is_member(tenant_id))
-  with check (public.is_member(tenant_id));
+create policy products_select_member on products for select to authenticated
+  using (public.is_member(tenant_id));
+
+-- Tulis: per perintah, hanya owner/admin. Tenant tidak boleh di-hard-delete
+-- lewat API (tanpa policy delete); pembuatan tenant lewat RPC onboarding.
+create policy products_insert_admin on products for insert to authenticated
+  with check (public.has_role(tenant_id, array['owner', 'admin']));
+create policy products_update_admin on products for update to authenticated
+  using (public.has_role(tenant_id, array['owner', 'admin']))
+  with check (public.has_role(tenant_id, array['owner', 'admin']));
+-- DELETE hanya jika memang diizinkan desain; kalau tidak, jangan buat policy DELETE.
 ```
 
-Pembatasan role (misal `kasir` tidak boleh ubah `cost_price`) dilakukan lewat fungsi `public.has_role(tenant_id, roles[])` di policy tulis, bukan di UI saja.
+Pembatasan role (misal `kasir` tidak boleh ubah `cost_price`) dilakukan lewat fungsi `public.has_role(tenant_id, roles[])` di policy tulis per perintah, bukan di UI saja. Tabel baru wajib punya pasangan tes pgTAP positif (boleh oleh role yang berhak) dan negatif (ditolak untuk role lain); setiap tes negatif diikuti verifikasi sebagai postgres bahwa data tidak berubah.
 
 **HPP/modal disembunyikan dari kasir.** Role `kasir` dan `mekanik` tidak boleh membaca `cost_price`, `unit_cost`, atau nilai aset stok. Sediakan view `products_pos` (tanpa kolom biaya) untuk layar kasir dan daftar stok, dan cabut akses baca tabel `products` untuk dua role itu. Menyembunyikan di UI saja tidak cukup.
 

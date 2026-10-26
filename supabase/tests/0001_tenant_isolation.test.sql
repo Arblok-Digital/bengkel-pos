@@ -4,7 +4,7 @@
 -- (via SET LOCAL role + SET LOCAL request.jwt.claims), BUKAN sebagai postgres.
 
 begin;
-select plan(25);
+select plan(26);
 
 -- ─── data uji ────────────────────────────────────────────────────────────────
 create extension if not exists pgtap with schema extensions;
@@ -40,6 +40,14 @@ create or replace function tests_set_anon() returns void
   begin
     execute format('set local "request.jwt.claims" to %L', json_build_object('role', 'anon'));
     execute 'set local role anon';
+  end;
+  $$;
+
+create or replace function tests_set_postgres() returns void
+  language plpgsql as $$
+  begin
+    execute 'reset request.jwt.claims';
+    execute 'reset role';
   end;
   $$;
 
@@ -143,15 +151,25 @@ select is(
 );
 
 -- ─── 8. user B tidak bisa update memberships tenant-nya sendiri ──────────────
+-- (dengan policy per perintah: UPDATE menyaring 0 baris, bukan melempar error)
 select tests_set_user('22222222-2222-2222-2222-222222222222');
-select throws_ok(
-  $query$
-    update public.memberships set role = 'owner'
+with updated as (
+  update public.memberships set role = 'owner'
+  where tenant_id = 'aaaaaaa1-0000-0000-0000-000000000002'
+    and user_id = '22222222-2222-2222-2222-222222222222'
+  returning id
+)
+select is(
+  count(*)::int, 0, 'kasir tidak bisa mengubah memberships (0 baris)'
+) from updated;
+
+-- verifikasi sebagai postgres bahwa data TIDAK berubah
+select tests_set_postgres();
+select is(
+  (select role from public.memberships
     where tenant_id = 'aaaaaaa1-0000-0000-0000-000000000002'
-  $query$,
-  '42501',
-  'new row violates row-level security policy for table "memberships"',
-  'kasir tidak bisa menaikkan rol dirinya ke owner'
+      and user_id = '22222222-2222-2222-2222-222222222222'),
+  'kasir', 'VERIF: role B dari tenant B tetap kasir'
 );
 
 -- ─── 9. privilege fungsi: is_member/has_role hanya untuk authenticated ──────
