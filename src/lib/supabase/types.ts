@@ -23,7 +23,33 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "memberships": {
+            "categories": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"id": string,"name": string,"parent_id": string | null,"tenant_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"name": string,"parent_id"?: string | null,"tenant_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"name"?: string,"parent_id"?: string | null,"tenant_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "categories_parent_same_tenant"
+      columns: ["tenant_id","parent_id"]
+isOneToOne: false
+      referencedRelation: "categories"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "categories_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"memberships": {
                   Row: {
                     "active": boolean,"created_at": string,"created_by": string | null,"id": string,"outlet_ids": (string)[],"role": string,"tenant_id": string,"updated_at": string,"user_id": string
                   }
@@ -76,6 +102,26 @@ isOneToOne: false
                   }
                   Relationships: [
                     
+                  ]
+                },"units": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"id": string,"name": string,"tenant_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"name": string,"tenant_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"name"?: string,"tenant_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "units_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
                   ]
                 }
           }
