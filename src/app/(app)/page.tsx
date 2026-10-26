@@ -54,7 +54,8 @@ export default async function DashboardPage() {
             <span className="font-semibold text-destructive">Stok menipis</span>
             <span className="text-muted-foreground">
               {" "}
-              &middot; {lowCount} barang di bawah stok minimum
+              &middot; {lowStock.tenantName} &middot; {lowCount} barang di bawah
+              stok minimum
             </span>
           </span>
           <span className="font-semibold text-destructive" aria-hidden>
