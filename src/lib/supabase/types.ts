@@ -333,6 +333,64 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"stock_opname_items": {
+                  Row: {
+                    "counted_qty": number | null,"created_at": string,"difference": number,"id": string,"opname_id": string,"product_id": string,"system_qty": number,"tenant_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "counted_qty"?: number | null,"created_at"?: string,"difference"?: number,"id"?: string,"opname_id": string,"product_id": string,"system_qty"?: number,"tenant_id": string
+                  }
+                  Update: {
+                    "counted_qty"?: number | null,"created_at"?: string,"difference"?: number,"id"?: string,"opname_id"?: string,"product_id"?: string,"system_qty"?: number,"tenant_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "stock_opname_items_opname_same_tenant"
+      columns: ["tenant_id","opname_id"]
+isOneToOne: false
+      referencedRelation: "stock_opnames"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "stock_opname_items_product_same_tenant"
+      columns: ["tenant_id","product_id"]
+isOneToOne: false
+      referencedRelation: "products"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "stock_opname_items_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"stock_opnames": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"id": string,"note": string | null,"outlet_id": string,"posted_at": string | null,"posted_by": string | null,"status": string,"tenant_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"note"?: string | null,"outlet_id": string,"posted_at"?: string | null,"posted_by"?: string | null,"status"?: string,"tenant_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"note"?: string | null,"outlet_id"?: string,"posted_at"?: string | null,"posted_by"?: string | null,"status"?: string,"tenant_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "stock_opnames_outlet_same_tenant"
+      columns: ["tenant_id","outlet_id"]
+isOneToOne: false
+      referencedRelation: "outlets"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "stock_opnames_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"suppliers": {
                   Row: {
                     "active": boolean,"address": string | null,"created_at": string,"created_by": string | null,"id": string,"name": string,"payment_terms_days": number,"phone": string | null,"tenant_id": string,"updated_at": string
@@ -422,6 +480,9 @@ isOneToOne: false
             "adjust_stock":
 { Args: { "p_client_uuid": string,"p_outlet_id": string,"p_product_id": string,"p_qty_base": number,"p_reason": string,"p_tenant_id": string }; Returns: string
                            },
+"create_stock_opname":
+{ Args: { "p_note": string,"p_outlet_id": string,"p_tenant_id": string }; Returns: string
+                           },
 "create_tenant":
 { Args: { "p_business_type": string,"p_client_uuid": string,"p_name": string,"p_outlet_name": string }; Returns: {
               "outlet_id": string,"tenant_id": string
@@ -436,8 +497,14 @@ isOneToOne: false
 "is_member":
 { Args: { "t": string }; Returns: boolean
                            },
+"post_stock_opname":
+{ Args: { "p_opname_id": string }; Returns: number
+                           },
 "resolve_price":
 { Args: { "p_product_id": string,"p_qty": number,"p_tenant_id": string,"p_tier_id": string,"p_unit_id": string }; Returns: number
+                           },
+"save_stock_opname_counts":
+{ Args: { "p_counts": Json,"p_opname_id": string }; Returns: number
                            }
           }
           Enums: {

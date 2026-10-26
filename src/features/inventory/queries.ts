@@ -150,3 +150,134 @@ export async function getStockCard(
     })),
   };
 }
+
+export type OpnameListRow = {
+  id: string;
+  outletName: string;
+  status: string;
+  note: string | null;
+  createdAt: string;
+};
+
+export type OpnamesPageData = {
+  tenantId: string;
+  tenantName: string;
+  canWrite: boolean;
+  outlets: { id: string; name: string }[];
+  opnames: OpnameListRow[];
+};
+
+export async function getOpnamesPage(): Promise<OpnamesPageData | null> {
+  const base = await getCatalog();
+  if (!base) return null;
+
+  const supabase = await createClient();
+  const [outletsRes, opnamesRes] = await Promise.all([
+    supabase
+      .from("outlets")
+      .select("id, name")
+      .eq("tenant_id", base.tenantId)
+      .order("name"),
+    supabase
+      .from("stock_opnames")
+      .select("id, outlet_id, status, note, created_at")
+      .eq("tenant_id", base.tenantId)
+      .order("created_at", { ascending: false }),
+  ]);
+
+  const outletNames = new Map(
+    (outletsRes.data ?? []).map((outlet) => [outlet.id, outlet.name])
+  );
+
+  return {
+    tenantId: base.tenantId,
+    tenantName: base.tenantName,
+    canWrite: base.canWrite,
+    outlets: outletsRes.data ?? [],
+    opnames: (opnamesRes.data ?? []).map((row) => ({
+      id: row.id,
+      outletName: outletNames.get(row.outlet_id) ?? "—",
+      status: row.status,
+      note: row.note,
+      createdAt: row.created_at,
+    })),
+  };
+}
+
+export type OpnameItemRow = {
+  id: string;
+  productName: string;
+  systemQty: number;
+  countedQty: number | null;
+  difference: number;
+};
+
+export type OpnameDetailData = {
+  id: string;
+  tenantId: string;
+  tenantName: string;
+  outletName: string;
+  status: string;
+  note: string | null;
+  canWrite: boolean;
+  items: OpnameItemRow[];
+};
+
+export async function getOpnameDetail(
+  opnameId: string
+): Promise<OpnameDetailData | null> {
+  const base = await getCatalog();
+  if (!base) return null;
+
+  const supabase = await createClient();
+  const [opnameRes, itemsRes] = await Promise.all([
+    supabase
+      .from("stock_opnames")
+      .select("id, tenant_id, outlet_id, status, note")
+      .eq("tenant_id", base.tenantId)
+      .eq("id", opnameId)
+      .maybeSingle(),
+    supabase
+      .from("stock_opname_items")
+      .select("id, product_id, system_qty, counted_qty, difference")
+      .eq("tenant_id", base.tenantId)
+      .eq("opname_id", opnameId)
+      .order("product_id"),
+  ]);
+
+  if (!opnameRes.data) return null;
+
+  const [outletRes, productsRes] = await Promise.all([
+    supabase
+      .from("outlets")
+      .select("name")
+      .eq("tenant_id", base.tenantId)
+      .eq("id", opnameRes.data.outlet_id)
+      .maybeSingle(),
+    supabase
+      .from("products")
+      .select("id, name")
+      .eq("tenant_id", base.tenantId),
+  ]);
+
+  const productNames = new Map(
+    (productsRes.data ?? []).map((product) => [product.id, product.name])
+  );
+
+  return {
+    id: opnameRes.data.id,
+    tenantId: base.tenantId,
+    tenantName: base.tenantName,
+    outletName: outletRes.data?.name ?? "—",
+    status: opnameRes.data.status,
+    note: opnameRes.data.note,
+    canWrite: base.canWrite,
+    items: (itemsRes.data ?? []).map((row) => ({
+      id: row.id,
+      productName: productNames.get(row.product_id) ?? "—",
+      systemQty: Number(row.system_qty),
+      countedQty: row.counted_qty === null ? null : Number(row.counted_qty),
+      difference: Number(row.difference),
+    })),
+  };
+}

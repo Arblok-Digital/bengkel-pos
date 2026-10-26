@@ -14,3 +14,14 @@ export const stockAdjustmentSchema = z.object({
     .max(500, "Alasan maksimal 500 karakter"),
   clientUuid: z.guid(),
 });
+
+export const createOpnameSchema = z.object({
+  tenantId: z.guid(),
+  outletId: z.guid(),
+  note: z.string().trim().max(500, "Catatan maksimal 500 karakter").optional(),
+});
+
+export const opnameIdSchema = z.object({
+  opnameId: z.guid(),
+  tenantId: z.guid(),
+});

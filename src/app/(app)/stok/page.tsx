@@ -23,12 +23,20 @@ export default async function StockPage() {
           berubah lewat movement.
         </p>
         {data.canWrite ? (
-          <Link
-            href="/stok/sesuaikan"
-            className="mt-2 inline-block text-sm underline-offset-4 hover:underline"
-          >
-            Sesuaikan stok &rarr;
-          </Link>
+          <div className="mt-2 flex flex-wrap gap-4 text-sm">
+            <Link
+              href="/stok/sesuaikan"
+              className="underline-offset-4 hover:underline"
+            >
+              Sesuaikan stok &rarr;
+            </Link>
+            <Link
+              href="/stok/opname"
+              className="underline-offset-4 hover:underline"
+            >
+              Opname stok &rarr;
+            </Link>
+          </div>
         ) : null}
       </div>
 
