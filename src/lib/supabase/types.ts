@@ -689,6 +689,11 @@ isOneToOne: false
 "open_cash_shift":
 { Args: { "p_client_uuid": string,"p_opening_cash": number,"p_outlet_id": string,"p_tenant_id": string }; Returns: string
                            },
+"pos_catalog":
+{ Args: { "p_outlet_id": string,"p_tenant_id": string,"p_tier_id": string }; Returns: {
+              "barcode": string,"base_unit_id": string,"base_unit_name": string,"is_low": boolean,"min_stock": number,"name": string,"price": number,"product_id": string,"sku": string,"stock_qty": number,"track_stock": boolean,"units": Json
+            }[]
+                           },
 "post_stock_opname":
 { Args: { "p_opname_id": string }; Returns: number
                            },
@@ -697,6 +702,9 @@ isOneToOne: false
                            },
 "save_stock_opname_counts":
 { Args: { "p_counts": Json,"p_opname_id": string }; Returns: number
+                           },
+"shift_expected_cash":
+{ Args: { "p_shift_id": string }; Returns: number
                            }
           }
           Enums: {

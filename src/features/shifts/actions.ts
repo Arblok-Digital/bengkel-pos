@@ -57,8 +57,9 @@ export async function openShiftAction(
     };
   }
 
+  revalidatePath("/kasir/shift");
   revalidatePath("/kasir");
-  redirect("/kasir?opened=1");
+  redirect("/kasir/shift?opened=1");
 }
 
 export async function closeShiftAction(
@@ -95,6 +96,7 @@ export async function closeShiftAction(
     };
   }
 
+  revalidatePath("/kasir/shift");
   revalidatePath("/kasir");
-  redirect("/kasir?closed=1");
+  redirect("/kasir/shift?closed=1");
 }

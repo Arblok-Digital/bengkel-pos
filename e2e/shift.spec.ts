@@ -6,8 +6,7 @@ async function closeOpenShiftIfAny(page: Page) {
   if ((await heading.count()) === 0) return;
 
   const modal = page
-    .locator("dd")
-    .filter({ hasText: /^Rp / })
+    .locator("dt:has-text('Kas seharusnya') + dd")
     .first();
   const amount = ((await modal.textContent()) ?? "").replace(/\D/g, "");
 
@@ -23,8 +22,8 @@ test("buka shift, tutup shift, selisih kas 0", async ({ page }) => {
   await page.getByRole("button", { name: "Masuk" }).click();
   await expect(page).toHaveURL("/");
 
-  await page.getByRole("link", { name: "Kasir", exact: true }).click();
-  await expect(page).toHaveURL("/kasir");
+  await page.goto("/kasir/shift");
+  await expect(page).toHaveURL("/kasir/shift");
 
   await closeOpenShiftIfAny(page);
 

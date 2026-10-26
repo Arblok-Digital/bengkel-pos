@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/types";
-import { createSaleSchema } from "./schema";
+import { getPosProducts, getPosShift } from "./queries";
+import { createSaleSchema, priceRequestSchema } from "./schema";
 
 export type CreateSaleState = {
   error: string | null;
@@ -17,6 +18,8 @@ export type CreateSaleState = {
     status: string;
   } | null;
 };
+
+export type PriceResult = { price: number | null; error: string | null };
 
 const initialState: CreateSaleState = { error: null, success: null };
 
@@ -110,4 +113,50 @@ export async function createSaleAction(
       status: String(row.status ?? ""),
     },
   };
+}
+
+/** Harga final dari server untuk satu baris keranjang (tier + grosir). */
+export async function resolveSalePriceAction(input: {
+  productId: string;
+  unitId: string;
+  qty: number;
+  tierId: string | null;
+}): Promise<PriceResult> {
+  const parsed = priceRequestSchema.safeParse(input);
+  if (!parsed.success) {
+    return { price: null, error: "Permintaan harga tidak valid." };
+  }
+
+  const context = await getPosShift();
+  if (!context) {
+    return { price: null, error: "Sesi tidak valid." };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("resolve_price", {
+    p_tenant_id: context.tenantId,
+    p_product_id: parsed.data.productId,
+    p_unit_id: parsed.data.unitId,
+    p_tier_id: parsed.data.tierId ?? null,
+    p_qty: parsed.data.qty,
+  });
+
+  if (error || data === null) {
+    return { price: null, error: error?.message ?? "Harga tidak ditemukan." };
+  }
+
+  return { price: Number(data), error: null };
+}
+
+/** Katalog ulang saat tier pelanggan berubah. */
+export async function getPosCatalogAction(tierId: string | null) {
+  const context = await getPosShift();
+  if (!context?.shift) return { products: [], error: "Shift belum dibuka." };
+
+  const products = await getPosProducts(
+    context.tenantId,
+    context.shift.outletId,
+    tierId
+  );
+  return { products, error: null };
 }

@@ -49,3 +49,10 @@ export const createSaleSchema = z.object({
 });
 
 export type CreateSaleInput = z.infer<typeof createSaleSchema>;
+
+export const priceRequestSchema = z.object({
+  productId: z.guid(),
+  unitId: z.guid(),
+  qty: z.coerce.number().positive("Qty harus lebih dari 0"),
+  tierId: z.guid().nullable().optional(),
+});

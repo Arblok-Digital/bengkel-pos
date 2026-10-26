@@ -82,13 +82,24 @@ export async function getShiftPageData(): Promise<ShiftPageData | null> {
     isOwn: row.cashier_id === user.id,
   });
 
+  let currentShift = openRes.data ? toRow(openRes.data) : null;
+
+  if (currentShift) {
+    const { data: expected } = await supabase.rpc("shift_expected_cash", {
+      p_shift_id: currentShift.id,
+    });
+    if (expected !== null) {
+      currentShift = { ...currentShift, expectedCash: Number(expected) };
+    }
+  }
+
   return {
     tenantId: base.tenantId,
     tenantName: base.tenantName,
     canOpen: CASHIER_ROLES.includes(base.role),
     outlets: outletsRes.data ?? [],
     currentUserId: user.id,
-    currentShift: openRes.data ? toRow(openRes.data) : null,
+    currentShift,
     shifts: (shiftsRes.data ?? []).map(toRow),
   };
 }
