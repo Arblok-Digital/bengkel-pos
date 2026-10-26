@@ -168,3 +168,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Isolasi dari project lain
+- Bekerja hanya di C:\Users\ARBLOK\projects\bengkel. Dilarang membaca/menulis/menghapus di luar folder ini (kecuali cache npm/playwright dan resource Docker milik project ini).
+- Dilarang: `npm install -g`, mengubah PATH, Node global, git config global, .wslconfig, pengaturan Docker Desktop, file hosts, `docker system prune`.
+- Dilarang `docker stop/rm/kill/volume rm` pada container atau volume yang namanya tidak mengandung `bengkel-pos`.
+- Supabase: HANYA lokal. Dilarang `supabase link`, `supabase db push`, flag `--linked`, atau memakai kredensial/project Supabase remote mana pun, termasuk lewat MCP.
+- Sebelum perintah yang menyalakan/mematikan layanan (`supabase start/stop/db reset`, perintah docker), tampilkan perintahnya dan konfirmasi `project_id` + port di supabase/config.toml sudah milik project ini.
