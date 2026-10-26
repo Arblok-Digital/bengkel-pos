@@ -173,5 +173,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Bekerja hanya di C:\Users\ARBLOK\projects\bengkel. Dilarang membaca/menulis/menghapus di luar folder ini (kecuali cache npm/playwright dan resource Docker milik project ini).
 - Dilarang: `npm install -g`, mengubah PATH, Node global, git config global, .wslconfig, pengaturan Docker Desktop, file hosts, `docker system prune`.
 - Dilarang `docker stop/rm/kill/volume rm` pada container atau volume yang namanya tidak mengandung `bengkel-pos`.
+- Stapel Docker milik project ini: **daemon Docker di dalam WSL Ubuntu** (bukan Docker Desktop). Semua perintah Docker HANYA dari WSL, dan HANYA pada resource bernama `*bengkel-pos*`.
+- Container `n8n`, `keel-postgres-1`, `keel-redis-1`, dan service Postgres (5432) serta Redis (6379) di WSL Ubuntu adalah **milik project lain — tidak boleh disentuh**. Jangan menghentikan container project lain; pemiliknya yang menanganinya.
 - Supabase: HANYA lokal. Dilarang `supabase link`, `supabase db push`, flag `--linked`, atau memakai kredensial/project Supabase remote mana pun, termasuk lewat MCP.
+- Supabase CLI dijalankan dari WSL dengan `npx supabase@<versi> --workdir /mnt/c/Users/ARBLOK/projects/bengkel <cmd>`; `<versi>` harus sama dengan yang dikunci di `package.json`. Jangan menjalankan `npm install` atau perintah yang menulis ke `node_modules` dari WSL.
 - Sebelum perintah yang menyalakan/mematikan layanan (`supabase start/stop/db reset`, perintah docker), tampilkan perintahnya dan konfirmasi `project_id` + port di supabase/config.toml sudah milik project ini.
