@@ -89,6 +89,38 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"products": {
+                  Row: {
+                    "active": boolean,"barcode": string | null,"base_unit_id": string | null,"category_id": string | null,"cost_price": number,"created_at": string,"created_by": string | null,"id": string,"image_url": string | null,"kind": string,"min_stock": number,"name": string,"sell_price": number,"sku": string | null,"tenant_id": string,"track_stock": boolean,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "active"?: boolean,"barcode"?: string | null,"base_unit_id"?: string | null,"category_id"?: string | null,"cost_price"?: number,"created_at"?: string,"created_by"?: string | null,"id"?: string,"image_url"?: string | null,"kind"?: string,"min_stock"?: number,"name": string,"sell_price"?: number,"sku"?: string | null,"tenant_id": string,"track_stock"?: boolean,"updated_at"?: string
+                  }
+                  Update: {
+                    "active"?: boolean,"barcode"?: string | null,"base_unit_id"?: string | null,"category_id"?: string | null,"cost_price"?: number,"created_at"?: string,"created_by"?: string | null,"id"?: string,"image_url"?: string | null,"kind"?: string,"min_stock"?: number,"name"?: string,"sell_price"?: number,"sku"?: string | null,"tenant_id"?: string,"track_stock"?: boolean,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "products_category_same_tenant"
+      columns: ["tenant_id","category_id"]
+isOneToOne: false
+      referencedRelation: "categories"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "products_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "products_unit_same_tenant"
+      columns: ["tenant_id","base_unit_id"]
+isOneToOne: false
+      referencedRelation: "units"
+      referencedColumns: ["tenant_id","id"]
+    }
+                  ]
                 },"tenants": {
                   Row: {
                     "business_type": string,"client_uuid": string | null,"created_at": string,"created_by": string | null,"id": string,"name": string,"settings": NonNullable<Json>,"updated_at": string

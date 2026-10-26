@@ -39,6 +39,17 @@ begin
   values (v_outlet, v_tenant, 'Outlet Utama', v_user)
   on conflict (id) do nothing;
 
+  insert into public.units (id, tenant_id, name, created_by) values
+    ('f3000000-0000-0000-0000-000000000001', v_tenant, 'pcs', v_user),
+    ('f3000000-0000-0000-0000-000000000002', v_tenant, 'kg', v_user),
+    ('f3000000-0000-0000-0000-000000000003', v_tenant, 'liter', v_user),
+    ('f3000000-0000-0000-0000-000000000004', v_tenant, 'sak', v_user),
+    ('f3000000-0000-0000-0000-000000000005', v_tenant, 'meter', v_user),
+    ('f3000000-0000-0000-0000-000000000006', v_tenant, 'set', v_user),
+    ('f3000000-0000-0000-0000-000000000007', v_tenant, 'dus', v_user),
+    ('f3000000-0000-0000-0000-000000000008', v_tenant, 'batang', v_user)
+  on conflict (tenant_id, name) do nothing;
+
   insert into public.memberships (tenant_id, user_id, role, created_by)
   values (v_tenant, v_user, 'owner', v_user)
   on conflict (tenant_id, user_id) do nothing;

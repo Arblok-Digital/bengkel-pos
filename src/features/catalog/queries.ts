@@ -61,3 +61,110 @@ export async function getCatalog(): Promise<CatalogData | null> {
     units: units ?? [],
   };
 }
+
+export type ProductRow = {
+  id: string;
+  name: string;
+  sku: string | null;
+  barcode: string | null;
+  categoryId: string | null;
+  categoryName: string | null;
+  baseUnitId: string | null;
+  unitName: string | null;
+  kind: string;
+  sellPrice: number;
+  minStock: number;
+  active: boolean;
+};
+
+type RawProduct = {
+  id: string;
+  name: string;
+  sku: string | null;
+  barcode: string | null;
+  category_id: string | null;
+  base_unit_id: string | null;
+  kind: string;
+  sell_price: number;
+  min_stock: number;
+  active: boolean;
+};
+
+const PRODUCT_COLUMNS =
+  "id, name, sku, barcode, category_id, base_unit_id, kind, sell_price, min_stock, active";
+
+function toProductRow(
+  raw: RawProduct,
+  categoryNames: Map<string, string>,
+  unitNames: Map<string, string>
+): ProductRow {
+  return {
+    id: raw.id,
+    name: raw.name,
+    sku: raw.sku,
+    barcode: raw.barcode,
+    categoryId: raw.category_id,
+    categoryName: raw.category_id
+      ? (categoryNames.get(raw.category_id) ?? null)
+      : null,
+    baseUnitId: raw.base_unit_id,
+    unitName: raw.base_unit_id
+      ? (unitNames.get(raw.base_unit_id) ?? null)
+      : null,
+    kind: raw.kind,
+    sellPrice: raw.sell_price,
+    minStock: Number(raw.min_stock),
+    active: raw.active,
+  };
+}
+
+export type CatalogWithProducts = CatalogData & { products: ProductRow[] };
+
+export async function getProductsPage(): Promise<CatalogWithProducts | null> {
+  const base = await getCatalog();
+  if (!base) return null;
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("products")
+    .select(PRODUCT_COLUMNS)
+    .eq("tenant_id", base.tenantId)
+    .order("name");
+
+  const categoryNames = new Map(base.categories.map((c) => [c.id, c.name]));
+  const unitNames = new Map(base.units.map((u) => [u.id, u.name]));
+
+  return {
+    ...base,
+    products: (data ?? []).map((raw) =>
+      toProductRow(raw as RawProduct, categoryNames, unitNames)
+    ),
+  };
+}
+
+export type ProductEditData = CatalogData & { product: ProductRow };
+
+export async function getProductForEdit(
+  id: string
+): Promise<ProductEditData | null> {
+  const base = await getCatalog();
+  if (!base) return null;
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("products")
+    .select(PRODUCT_COLUMNS)
+    .eq("tenant_id", base.tenantId)
+    .eq("id", id)
+    .maybeSingle();
+
+  if (!data) return null;
+
+  const categoryNames = new Map(base.categories.map((c) => [c.id, c.name]));
+  const unitNames = new Map(base.units.map((u) => [u.id, u.name]));
+
+  return {
+    ...base,
+    product: toProductRow(data as RawProduct, categoryNames, unitNames),
+  };
+}
