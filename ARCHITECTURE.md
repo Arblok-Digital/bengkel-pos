@@ -94,7 +94,7 @@ Semua tabel punya: `id uuid pk`, `tenant_id uuid not null`, `created_at`, `updat
 ### 4.1 Tenant & akses
 - `tenants`: `name`, `business_type` (`bengkel` | `toko_bangunan` | `both`), `settings jsonb` (nama struk, footer, pajak, dll.)
 - `outlets`: `tenant_id`, `name`, `address`, `phone`
-- `memberships`: `tenant_id`, `user_id`, `role` (`owner` | `admin` | `kasir` | `mekanik` | `gudang`), `outlet_ids uuid[]`, `active`
+- `memberships`: `tenant_id`, `user_id`, `role` (`owner` | `admin` | `kasir` | `mekanik` | `gudang` | `dev`), `outlet_ids uuid[]`, `active`. `dev` adalah role operator platform: aktif di satu tenant mana pun memberi akses baca/tulis lintas tenant. **Hanya operator (SQL/service role) yang boleh membuat dev pertama; owner/admin tenant tidak boleh memberi, mengubah, atau menghapus role `dev`** (ditegakkan di policy `0005`).
 - `audit_logs`: `entity`, `entity_id`, `action`, `before jsonb`, `after jsonb`, `reason`, `user_id`
 
 ### 4.2 Katalog
@@ -184,6 +184,8 @@ create trigger products_tenant_id_immutable before update on products
 ```
 
 `set_created_by` memaksa `created_by = auth.uid()` saat ada sesi user (nilai kiriman client diabaikan); tanpa sesi (server/service) nilai eksplisit dihormati. Helper `is_member`/`has_role` dan trigger `protect_last_owner` wajib `security definer` supaya tidak bergantung pada policy SELECT dan tidak rekursif.
+
+**Role `dev` (operator platform).** `public.is_dev()` bernilai true bila user punya membership aktif ber-role `dev` di tenant mana pun; policy `tenants`/`outlets`/`memberships` memberi `or public.is_dev()` pada baca dan tulis. Karena itu role `dev` **tidak boleh** bisa diberikan lewat API tenant: policy `memberships` di `0005` mensyaratkan `role <> 'dev' or public.is_dev()` pada INSERT/UPDATE/DELETE. Dev pertama dibuat lewat SQL/service role. Tes wajib memuat negatif "owner/admin tidak bisa memberi role dev" dan "dev nonaktif kehilangan akses global".
 
 **HPP/modal disembunyikan dari kasir.** Role `kasir` dan `mekanik` tidak boleh membaca `cost_price`, `unit_cost`, atau nilai aset stok. Sediakan view `products_pos` (tanpa kolom biaya) untuk layar kasir dan daftar stok, dan cabut akses baca tabel `products` untuk dua role itu. Menyembunyikan di UI saja tidak cukup.
 

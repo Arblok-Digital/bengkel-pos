@@ -86,6 +86,9 @@ isOneToOne: false
             "has_role":
 { Args: { "roles": (string)[],"t": string }; Returns: boolean
                            },
+"is_dev":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
 "is_member":
 { Args: { "t": string }; Returns: boolean
                            }

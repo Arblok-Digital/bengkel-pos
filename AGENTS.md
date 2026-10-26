@@ -47,6 +47,7 @@ Dilarang menambah dependensi di luar daftar ini tanpa izin. Kalau merasa butuh, 
 - Setiap tabel bisnis wajib punya `tenant_id`, RLS aktif, dan indeks yang diawali `tenant_id`. Policy RLS **per perintah**: satu policy `for select ... using (public.is_member(tenant_id))` untuk semua member, dan policy tulis terpisah per INSERT/UPDATE/DELETE yang memeriksa `public.has_role(tenant_id, roles[])` (owner/admin). Tabel baru wajib punya pasangan tes positif/negatif pgTAP per perintah, dan setiap tes negatif wajib diikuti verifikasi (sebagai postgres) bahwa data tidak berubah.
 - Tenant tidak boleh di-hard-delete lewat API (tanpa policy DELETE); pembuatan tenant hanya lewat RPC onboarding (T1.2).
 - `tenant_id` tidak boleh berubah lewat UPDATE. Setiap tabel ber-`tenant_id` wajib memasang trigger `public.prevent_tenant_change` (lihat migrasi `0003`), dengan tes memakai aktor yang owner di dua tenant — policy `WITH CHECK` saja tidak cukup.
+- Role `dev` adalah operator platform (akses lintas tenant). **Hanya operator (SQL/service role) yang boleh membuat dev pertama**; policy `memberships` wajib menolak owner/admin memberi, mengubah, atau menghapus role `dev` (lihat migrasi `0005`), dan tesnya wajib memuat kasus negatif tersebut.
 - `cost_price`, `unit_cost`, dan nilai aset stok **tidak boleh terbaca** oleh role `kasir`/`mekanik` (pakai view tanpa kolom biaya).
 - Service role key hanya di server. Jangan pernah di kode client atau di commit.
 - Jangan commit `.env*`. Jangan mencetak secret ke log atau ke output kamu.

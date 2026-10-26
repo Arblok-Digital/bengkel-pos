@@ -186,7 +186,7 @@ select throws_ok(
   $q$ insert into public.outlets (id, tenant_id, name)
        values ('66666666-2222-2222-2222-222222222222', '22222222-2222-2222-2222-222222222222', 'Outlet Kasir Bajakan') $q$,
   '42501',
-  'new row violates row-level security policy for table \"outlets\"',
+  'new row violates row-level security policy for table "outlets"',
   'KASIR: insert outlet tenant Dua ditolak'
 );
 
@@ -213,16 +213,14 @@ select is(
 -- ═════════════════════════════════════════════════════════════════════════════
 -- (18) dev tidak bisa menurunkan owner terakhir di tenant 1 (A adalah owner aktif tunggal)
 select tests_set_user('aaaaaaaa-1111-1111-1111-111111111111');
-with updated as (
-  update public.memberships set role = 'kasir', active = false
-  where tenant_id = '11111111-1111-1111-1111-111111111111'
-    and user_id = 'bbbbbbbb-2222-2222-2222-222222222222'
-  returning id
-)
-select is(
-  count(*)::int, 0,
-  'DEV: tidak bisa menurunkan owner terakhir (0 baris)'
-) from updated;
+select throws_ok(
+  $q$ update public.memberships set role = 'kasir', active = false
+      where tenant_id = '11111111-1111-1111-1111-111111111111'
+        and user_id = 'bbbbbbbb-2222-2222-2222-222222222222' $q$,
+  'P0001',
+  'Owner aktif terakhir tidak boleh dihapus, diturunkan, atau dinonaktifkan (tenant 11111111-1111-1111-1111-111111111111: hanya 0 owner aktif tersisa)',
+  'DEV: menurunkan owner terakhir ditolak trigger'
+);
 
 -- (19) verifikasi owner A masih aktif (sebagai postgres)
 select tests_set_postgres();
@@ -240,7 +238,7 @@ select throws_ok(
   $q$ update public.outlets set tenant_id = '22222222-2222-2222-2222-222222222222'
        where id = '33333333-1111-1111-1111-111111111111' $q$,
   'P0001',
-  'tenant_id tidak boleh diubah',
+  'tenant_id tidak boleh diubah (tabel outlets)',
   'DEV: pindah tenant_id outlet ditolak trigger'
 );
 
