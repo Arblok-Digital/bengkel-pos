@@ -176,6 +176,15 @@ create policy products_update_admin on products for update to authenticated
 
 Pembatasan role (misal `kasir` tidak boleh ubah `cost_price`) dilakukan lewat fungsi `public.has_role(tenant_id, roles[])` di policy tulis per perintah, bukan di UI saja. Tabel baru wajib punya pasangan tes pgTAP positif (boleh oleh role yang berhak) dan negatif (ditolak untuk role lain); setiap tes negatif diikuti verifikasi sebagai postgres bahwa data tidak berubah.
 
+**`tenant_id` tidak boleh berpindah lewat UPDATE.** Policy `WITH CHECK` hanya melihat baris baru, jadi user yang admin/owner di dua tenant bisa memindahkan baris antar-tenant. Setiap tabel ber-`tenant_id` wajib memasang trigger yang sama (contoh di migrasi `0003`), dan tesnya memakai aktor yang owner di dua tenant:
+
+```sql
+create trigger products_tenant_id_immutable before update on products
+  for each row execute function public.prevent_tenant_change();
+```
+
+`set_created_by` memaksa `created_by = auth.uid()` saat ada sesi user (nilai kiriman client diabaikan); tanpa sesi (server/service) nilai eksplisit dihormati. Helper `is_member`/`has_role` dan trigger `protect_last_owner` wajib `security definer` supaya tidak bergantung pada policy SELECT dan tidak rekursif.
+
 **HPP/modal disembunyikan dari kasir.** Role `kasir` dan `mekanik` tidak boleh membaca `cost_price`, `unit_cost`, atau nilai aset stok. Sediakan view `products_pos` (tanpa kolom biaya) untuk layar kasir dan daftar stok, dan cabut akses baca tabel `products` untuk dua role itu. Menyembunyikan di UI saja tidak cukup.
 
 ---

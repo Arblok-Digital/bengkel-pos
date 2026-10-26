@@ -600,13 +600,13 @@ select throws_ok(
   'TENANT: insert tenant lewat API ditolak'
 );
 
--- (57) outlet tidak bisa pindah tenant
+-- (57) outlet tidak bisa pindah tenant (sejak 0003: ditolak trigger, bukan with check)
 select throws_ok(
   $q$ update public.outlets set tenant_id = 'aaaaaaa1-0000-0000-0000-000000000002'
      where id = 'bbbbbbb1-0000-0000-0000-000000000001' $q$,
-  '42501',
-  'new row violates row-level security policy for table "outlets"',
-  'OUTLET: pindah outlet ke tenant lain ditolak (with check)'
+  'P0001',
+  'tenant_id tidak boleh diubah (tabel outlets)',
+  'OUTLET: pindah outlet ke tenant lain ditolak trigger'
 );
 
 -- (58) verifikasi outlet A tetap di tenant A
