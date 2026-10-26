@@ -53,4 +53,25 @@ begin
   insert into public.memberships (tenant_id, user_id, role, created_by)
   values (v_tenant, v_user, 'owner', v_user)
   on conflict (tenant_id, user_id) do nothing;
+
+  -- Produk demo + stok awal (movement, bukan update stock_levels)
+  insert into public.products (id, tenant_id, name, sku, barcode, base_unit_id, kind, sell_price, min_stock, created_by)
+  values
+    ('f6000000-0000-0000-0000-000000000001', v_tenant, 'Oli Mesin 1L', 'OLI-1L', '8999001',
+     'f3000000-0000-0000-0000-000000000003', 'barang', 55000, 2, v_user),
+    ('f6000000-0000-0000-0000-000000000002', v_tenant, 'Semen 40kg', 'SEMEN-1', '8999002',
+     'f3000000-0000-0000-0000-000000000004', 'barang', 65000, 5, v_user)
+  on conflict (id) do nothing;
+
+  insert into public.stock_movements (id, tenant_id, product_id, outlet_id, qty_base, type, note, created_by)
+  values
+    ('f7000000-0000-0000-0000-000000000001', v_tenant,
+     'f6000000-0000-0000-0000-000000000001', v_outlet, 10, 'adjustment', 'Stok awal demo', v_user),
+    ('f7000000-0000-0000-0000-000000000002', v_tenant,
+     'f6000000-0000-0000-0000-000000000001', v_outlet, -3, 'sale', 'Penjualan demo', v_user),
+    ('f7000000-0000-0000-0000-000000000003', v_tenant,
+     'f6000000-0000-0000-0000-000000000002', v_outlet, 20, 'adjustment', 'Stok awal demo', v_user),
+    ('f7000000-0000-0000-0000-000000000004', v_tenant,
+     'f6000000-0000-0000-0000-000000000002', v_outlet, -18, 'sale', 'Penjualan demo', v_user)
+  on conflict (id) do nothing;
 end $$;

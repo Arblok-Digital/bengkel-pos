@@ -22,9 +22,9 @@ test("owner mengimpor produk dari CSV", async ({ page }) => {
   await expect(page.getByText("2 baris · 2 valid")).toBeVisible();
 
   await page.getByRole("button", { name: "Impor 2 produk" }).click();
-  await expect(page.getByRole("status")).toContainText(
-    "2 produk berhasil diimpor"
-  );
+  await expect(
+    page.getByRole("status").filter({ hasText: "2 produk berhasil diimpor" })
+  ).toBeVisible();
 
   await page.goto("/produk");
   await expect(page.getByRole("cell", { name: new RegExp(name1) })).toBeVisible();

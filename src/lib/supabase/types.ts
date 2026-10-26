@@ -269,6 +269,70 @@ isOneToOne: false
       referencedColumns: ["tenant_id","id"]
     }
                   ]
+                },"stock_levels": {
+                  Row: {
+                    "outlet_id": string,"product_id": string,"qty_base": number,"tenant_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "outlet_id": string,"product_id": string,"qty_base"?: number,"tenant_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "outlet_id"?: string,"product_id"?: string,"qty_base"?: number,"tenant_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "stock_levels_outlet_same_tenant"
+      columns: ["tenant_id","outlet_id"]
+isOneToOne: false
+      referencedRelation: "outlets"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "stock_levels_product_same_tenant"
+      columns: ["tenant_id","product_id"]
+isOneToOne: false
+      referencedRelation: "products"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "stock_levels_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"stock_movements": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"id": string,"note": string | null,"outlet_id": string,"product_id": string,"qty_base": number,"ref_id": string | null,"ref_type": string | null,"tenant_id": string,"type": string,"unit_cost": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"note"?: string | null,"outlet_id": string,"product_id": string,"qty_base": number,"ref_id"?: string | null,"ref_type"?: string | null,"tenant_id": string,"type": string,"unit_cost"?: number
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"note"?: string | null,"outlet_id"?: string,"product_id"?: string,"qty_base"?: number,"ref_id"?: string | null,"ref_type"?: string | null,"tenant_id"?: string,"type"?: string,"unit_cost"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "stock_movements_outlet_same_tenant"
+      columns: ["tenant_id","outlet_id"]
+isOneToOne: false
+      referencedRelation: "outlets"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "stock_movements_product_same_tenant"
+      columns: ["tenant_id","product_id"]
+isOneToOne: false
+      referencedRelation: "products"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "stock_movements_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"suppliers": {
                   Row: {
                     "active": boolean,"address": string | null,"created_at": string,"created_by": string | null,"id": string,"name": string,"payment_terms_days": number,"phone": string | null,"tenant_id": string,"updated_at": string
@@ -326,7 +390,33 @@ isOneToOne: false
                 }
           }
           Views: {
-            [_ in never]: never
+            "stock_by_outlet": {
+                  Row: {
+                    "is_low": boolean | null,"min_stock": number,"outlet_id": string,"outlet_name": string,"product_id": string,"product_name": string,"qty_base": number,"sku": string | null,"tenant_id": string
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    {
+      foreignKeyName: "stock_levels_outlet_same_tenant"
+      columns: ["tenant_id","outlet_id"]
+isOneToOne: false
+      referencedRelation: "outlets"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "stock_levels_product_same_tenant"
+      columns: ["tenant_id","product_id"]
+isOneToOne: false
+      referencedRelation: "products"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "stock_levels_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                }
           }
           Functions: {
             "create_tenant":
