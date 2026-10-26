@@ -14,6 +14,8 @@ export default async function StockPage() {
     redirect("/onboarding");
   }
 
+  const lowCount = data.rows.filter((row) => row.isLow).length;
+
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
       <div>
@@ -38,6 +40,16 @@ export default async function StockPage() {
             </Link>
           </div>
         ) : null}
+        <div className="mt-2 text-sm">
+          <Link
+            href="/stok/menipis"
+            className="font-medium underline-offset-4 hover:underline"
+          >
+            {lowCount > 0
+              ? `Stok menipis (${lowCount}) \u2192`
+              : "Stok menipis \u2192"}
+          </Link>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-lg border bg-card">

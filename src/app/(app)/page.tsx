@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { getLowStock } from "@/features/inventory/queries";
 import {
   getMyTenants,
   type BusinessType,
@@ -21,11 +23,16 @@ const roleLabel: Record<string, string> = {
 };
 
 export default async function DashboardPage() {
-  const tenants = await getMyTenants();
+  const [tenants, lowStock] = await Promise.all([
+    getMyTenants(),
+    getLowStock(),
+  ]);
 
   if (tenants.length === 0) {
     redirect("/onboarding");
   }
+
+  const lowCount = lowStock?.rows.length ?? 0;
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
@@ -37,6 +44,24 @@ export default async function DashboardPage() {
           </p>
         </div>
       </div>
+
+      {lowStock && lowCount > 0 ? (
+        <Link
+          href="/stok/menipis"
+          className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm hover:bg-destructive/10"
+        >
+          <span>
+            <span className="font-semibold text-destructive">Stok menipis</span>
+            <span className="text-muted-foreground">
+              {" "}
+              &middot; {lowCount} barang di bawah stok minimum
+            </span>
+          </span>
+          <span className="font-semibold text-destructive" aria-hidden>
+            &rarr;
+          </span>
+        </Link>
+      ) : null}
 
       <div className="flex flex-col gap-4">
         {tenants.map((tenant) => (

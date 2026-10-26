@@ -7,7 +7,7 @@ test("halaman stok menandai stok menipis", async ({ page }) => {
   await page.getByRole("button", { name: "Masuk" }).click();
   await expect(page).toHaveURL("/");
 
-  await page.getByRole("link", { name: "Stok" }).click();
+  await page.getByRole("link", { name: "Stok", exact: true }).click();
   await expect(page).toHaveURL("/stok");
 
   const row = page.getByRole("row", { name: /Semen 40kg/ });
