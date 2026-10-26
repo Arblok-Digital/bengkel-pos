@@ -303,14 +303,14 @@ isOneToOne: false
                   ]
                 },"stock_movements": {
                   Row: {
-                    "created_at": string,"created_by": string | null,"id": string,"note": string | null,"outlet_id": string,"product_id": string,"qty_base": number,"ref_id": string | null,"ref_type": string | null,"tenant_id": string,"type": string,"unit_cost": number
+                    "client_uuid": string | null,"created_at": string,"created_by": string | null,"id": string,"note": string | null,"outlet_id": string,"product_id": string,"qty_base": number,"ref_id": string | null,"ref_type": string | null,"tenant_id": string,"type": string,"unit_cost": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"note"?: string | null,"outlet_id": string,"product_id": string,"qty_base": number,"ref_id"?: string | null,"ref_type"?: string | null,"tenant_id": string,"type": string,"unit_cost"?: number
+                    "client_uuid"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"note"?: string | null,"outlet_id": string,"product_id": string,"qty_base": number,"ref_id"?: string | null,"ref_type"?: string | null,"tenant_id": string,"type": string,"unit_cost"?: number
                   }
                   Update: {
-                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"note"?: string | null,"outlet_id"?: string,"product_id"?: string,"qty_base"?: number,"ref_id"?: string | null,"ref_type"?: string | null,"tenant_id"?: string,"type"?: string,"unit_cost"?: number
+                    "client_uuid"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"note"?: string | null,"outlet_id"?: string,"product_id"?: string,"qty_base"?: number,"ref_id"?: string | null,"ref_type"?: string | null,"tenant_id"?: string,"type"?: string,"unit_cost"?: number
                   }
                   Relationships: [
                     {
@@ -419,7 +419,10 @@ isOneToOne: false
                 }
           }
           Functions: {
-            "create_tenant":
+            "adjust_stock":
+{ Args: { "p_client_uuid": string,"p_outlet_id": string,"p_product_id": string,"p_qty_base": number,"p_reason": string,"p_tenant_id": string }; Returns: string
+                           },
+"create_tenant":
 { Args: { "p_business_type": string,"p_client_uuid": string,"p_name": string,"p_outlet_name": string }; Returns: {
               "outlet_id": string,"tenant_id": string
             }[]

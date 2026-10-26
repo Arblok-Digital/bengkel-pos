@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getStockByOutlet } from "@/features/inventory/queries";
@@ -21,6 +22,14 @@ export default async function StockPage() {
           {data.tenantName} &middot; {data.rows.length} baris stok. Stok hanya
           berubah lewat movement.
         </p>
+        {data.canWrite ? (
+          <Link
+            href="/stok/sesuaikan"
+            className="mt-2 inline-block text-sm underline-offset-4 hover:underline"
+          >
+            Sesuaikan stok &rarr;
+          </Link>
+        ) : null}
       </div>
 
       <div className="overflow-x-auto rounded-lg border bg-card">
@@ -48,7 +57,14 @@ export default async function StockPage() {
                   key={`${row.outletId}-${row.productId}`}
                   className="border-b last:border-0"
                 >
-                  <td className="p-3 font-medium">{row.productName}</td>
+                  <td className="p-3 font-medium">
+                    <Link
+                      href={`/stok/${row.productId}`}
+                      className="underline-offset-4 hover:underline"
+                    >
+                      {row.productName}
+                    </Link>
+                  </td>
                   <td className="p-3">{row.sku ?? "—"}</td>
                   <td className="p-3">{row.outletName}</td>
                   <td
@@ -76,7 +92,7 @@ export default async function StockPage() {
       </div>
 
       <p className="text-muted-foreground text-sm">
-        Penyesuaian stok manual &amp; kartu stok menyusul di T3.2.
+        Klik nama produk untuk melihat kartu stok (riwayat movement).
       </p>
     </div>
   );

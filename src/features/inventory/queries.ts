@@ -15,6 +15,7 @@ export type StockRow = {
 export type StockPageData = {
   tenantId: string;
   tenantName: string;
+  canWrite: boolean;
   rows: StockRow[];
 };
 
@@ -34,6 +35,7 @@ export async function getStockByOutlet(): Promise<StockPageData | null> {
   return {
     tenantId: base.tenantId,
     tenantName: base.tenantName,
+    canWrite: base.canWrite,
     rows: (data ?? []).map((row) => ({
       outletId: row.outlet_id ?? "",
       outletName: row.outlet_name ?? "—",
@@ -43,6 +45,108 @@ export async function getStockByOutlet(): Promise<StockPageData | null> {
       qtyBase: Number(row.qty_base ?? 0),
       minStock: Number(row.min_stock ?? 0),
       isLow: Boolean(row.is_low),
+    })),
+  };
+}
+
+export type StockAdjustmentData = {
+  tenantId: string;
+  tenantName: string;
+  canWrite: boolean;
+  products: { id: string; name: string }[];
+  outlets: { id: string; name: string }[];
+};
+
+export async function getStockAdjustmentData(): Promise<StockAdjustmentData | null> {
+  const base = await getCatalog();
+  if (!base) return null;
+
+  const supabase = await createClient();
+  const [productsRes, outletsRes] = await Promise.all([
+    supabase
+      .from("products")
+      .select("id, name")
+      .eq("tenant_id", base.tenantId)
+      .eq("track_stock", true)
+      .eq("active", true)
+      .order("name"),
+    supabase
+      .from("outlets")
+      .select("id, name")
+      .eq("tenant_id", base.tenantId)
+      .order("name"),
+  ]);
+
+  return {
+    tenantId: base.tenantId,
+    tenantName: base.tenantName,
+    canWrite: base.canWrite,
+    products: productsRes.data ?? [],
+    outlets: outletsRes.data ?? [],
+  };
+}
+
+export type StockCardRow = {
+  id: string;
+  outletName: string;
+  qtyBase: number;
+  type: string;
+  note: string | null;
+  createdAt: string;
+};
+
+export type StockCardData = {
+  tenantName: string;
+  productName: string;
+  sku: string | null;
+  minStock: number;
+  rows: StockCardRow[];
+};
+
+export async function getStockCard(
+  productId: string
+): Promise<StockCardData | null> {
+  const base = await getCatalog();
+  if (!base) return null;
+
+  const supabase = await createClient();
+  const [productRes, movementsRes, outletsRes] = await Promise.all([
+    supabase
+      .from("products")
+      .select("id, name, sku, min_stock")
+      .eq("tenant_id", base.tenantId)
+      .eq("id", productId)
+      .maybeSingle(),
+    supabase
+      .from("stock_movements")
+      .select("id, outlet_id, qty_base, type, note, created_at")
+      .eq("tenant_id", base.tenantId)
+      .eq("product_id", productId)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("outlets")
+      .select("id, name")
+      .eq("tenant_id", base.tenantId),
+  ]);
+
+  if (!productRes.data) return null;
+
+  const outletNames = new Map(
+    (outletsRes.data ?? []).map((outlet) => [outlet.id, outlet.name])
+  );
+
+  return {
+    tenantName: base.tenantName,
+    productName: productRes.data.name,
+    sku: productRes.data.sku,
+    minStock: Number(productRes.data.min_stock),
+    rows: (movementsRes.data ?? []).map((row) => ({
+      id: row.id,
+      outletName: outletNames.get(row.outlet_id) ?? "—",
+      qtyBase: Number(row.qty_base),
+      type: row.type,
+      note: row.note,
+      createdAt: row.created_at,
     })),
   };
 }
