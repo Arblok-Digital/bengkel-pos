@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+import { SerwistProvider } from "@serwist/turbopack/react";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -12,9 +13,34 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const APP_NAME = "Kasir Bengkel";
+const APP_TITLE = "Kasir Bengkel & Toko Bangunan";
+const APP_DESCRIPTION =
+  "Aplikasi kasir (POS) untuk bengkel dan toko bangunan: shift, penjualan, pembayaran, stok, dan struk.";
+
 export const metadata: Metadata = {
-  title: "Kasir Bengkel & Toko Bangunan",
-  description: "Aplikasi kasir (POS) untuk bengkel dan toko bangunan",
+  applicationName: APP_NAME,
+  title: APP_TITLE,
+  description: APP_DESCRIPTION,
+  formatDetection: { telephone: false },
+  appleWebApp: {
+    capable: true,
+    title: APP_NAME,
+    statusBarStyle: "default",
+  },
+  openGraph: {
+    type: "website",
+    siteName: APP_NAME,
+    title: APP_TITLE,
+    description: APP_DESCRIPTION,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0f172a",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -27,7 +53,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <SerwistProvider swUrl="/serwist/sw.js">{children}</SerwistProvider>
       </body>
     </html>
   );
