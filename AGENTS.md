@@ -74,7 +74,11 @@ Dilarang menambah dependensi di luar daftar ini tanpa izin. Kalau merasa butuh, 
 ## 5. Perintah Standar
 
 ```bash
-npm run dev                      # jalankan app
+npm run dev                      # jalankan app (otomatis menyalakan Supabase lokal)
+npm run db:up                    # nyalakan Supabase lokal (db, auth, rest, kong saja)
+npm run db:down                  # matikan container bengkel-pos, data tetap aman
+npm run db:status                # container, kesehatan API/relay, pemakaian RAM
+npm run wsl:off                  # db:down lalu matikan seluruh WSL (bebaskan RAM)
 npm run lint
 npm run typecheck                # tsc --noEmit
 npm run test                     # vitest
