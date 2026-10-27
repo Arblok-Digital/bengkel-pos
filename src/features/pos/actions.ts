@@ -4,7 +4,15 @@ import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/types";
-import { getPosProducts, getPosShift } from "./queries";
+import {
+  getPosCustomers,
+  getPosPriceBreaks,
+  getPosProducts,
+  getPosShift,
+  type PosCustomer,
+  type PosPriceBreak,
+  type PosProduct,
+} from "./queries";
 import { createSaleSchema, priceRequestSchema } from "./schema";
 
 export type CreateSaleState = {
@@ -148,15 +156,47 @@ export async function resolveSalePriceAction(input: {
   return { price: Number(data), error: null };
 }
 
-/** Katalog ulang saat tier pelanggan berubah. */
-export async function getPosCatalogAction(tierId: string | null) {
-  const context = await getPosShift();
-  if (!context?.shift) return { products: [], error: "Shift belum dibuka." };
+/** Snapshot katalog untuk hidrasi cache Dexie di browser. Tanpa HPP. */
+export type PosCatalogSnapshotResult = {
+  tenantId: string;
+  outletId: string;
+  tierId: string | null;
+  products: PosProduct[];
+  customers: PosCustomer[];
+  priceBreaks: PosPriceBreak[];
+  error: string | null;
+};
 
-  const products = await getPosProducts(
-    context.tenantId,
-    context.shift.outletId,
-    tierId
-  );
-  return { products, error: null };
+/** Katalog + pelanggan + harga grosir untuk cache lokal saat tier berubah. */
+export async function getPosCatalogAction(
+  tierId: string | null
+): Promise<PosCatalogSnapshotResult> {
+  const context = await getPosShift();
+  if (!context?.shift) {
+    return {
+      tenantId: context?.tenantId ?? "",
+      outletId: "",
+      tierId,
+      products: [],
+      customers: [],
+      priceBreaks: [],
+      error: "Shift belum dibuka.",
+    };
+  }
+
+  const [products, customers, priceBreaks] = await Promise.all([
+    getPosProducts(context.tenantId, context.shift.outletId, tierId),
+    getPosCustomers(context.tenantId),
+    getPosPriceBreaks(context.tenantId),
+  ]);
+
+  return {
+    tenantId: context.tenantId,
+    outletId: context.shift.outletId,
+    tierId,
+    products,
+    customers,
+    priceBreaks,
+    error: null,
+  };
 }

@@ -31,6 +31,14 @@ export type PosCustomer = {
   creditLimit: number;
 };
 
+/** Harga grosir per satuan (harga jual, bukan HPP). */
+export type PosPriceBreak = {
+  productId: string;
+  unitId: string;
+  minQty: number;
+  price: number;
+};
+
 export type PosShift = {
   id: string;
   outletId: string;
@@ -164,6 +172,42 @@ export async function getPosShift(): Promise<{
   };
 }
 
+/** Pelanggan aktif tenant untuk layar kasir + cache offline. */
+export async function getPosCustomers(tenantId: string): Promise<PosCustomer[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("customers")
+    .select("id, name, tier_id, credit_limit")
+    .eq("tenant_id", tenantId)
+    .eq("active", true)
+    .order("name");
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    tierId: row.tier_id,
+    creditLimit: Number(row.credit_limit ?? 0),
+  }));
+}
+
+/** Harga grosir tenant untuk cache offline. Tidak memuat HPP. */
+export async function getPosPriceBreaks(
+  tenantId: string
+): Promise<PosPriceBreak[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("price_breaks")
+    .select("product_id, unit_id, min_qty, price")
+    .eq("tenant_id", tenantId);
+
+  return (data ?? []).map((row) => ({
+    productId: row.product_id,
+    unitId: row.unit_id,
+    minQty: Number(row.min_qty),
+    price: row.price,
+  }));
+}
+
 /** Katalog + shift terbuka + pelanggan untuk layar kasir. */
 export async function getPosData(): Promise<PosData | null> {
   const base = await getCatalog();
@@ -175,14 +219,9 @@ export async function getPosData(): Promise<PosData | null> {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [context, customersRes, tierRes] = await Promise.all([
+  const [context, customers, tierRes] = await Promise.all([
     getPosShift(),
-    supabase
-      .from("customers")
-      .select("id, name, tier_id, credit_limit")
-      .eq("tenant_id", base.tenantId)
-      .eq("active", true)
-      .order("name"),
+    getPosCustomers(base.tenantId),
     supabase
       .from("price_tiers")
       .select("id")
@@ -192,13 +231,6 @@ export async function getPosData(): Promise<PosData | null> {
   ]);
 
   if (!context) return null;
-
-  const customers: PosCustomer[] = (customersRes.data ?? []).map((row) => ({
-    id: row.id,
-    name: row.name,
-    tierId: row.tier_id,
-    creditLimit: Number(row.credit_limit ?? 0),
-  }));
 
   if (!context.shift) {
     return {

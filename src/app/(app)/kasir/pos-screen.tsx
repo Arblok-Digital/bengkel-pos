@@ -1,11 +1,11 @@
 "use client";
 
+import { Wifi, WifiOff, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
   useTransition,
@@ -14,12 +14,14 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   createSaleAction,
-  getPosCatalogAction,
   resolveSalePriceAction,
   type CreateSaleState,
 } from "@/features/pos/actions";
 import type { PosCustomer, PosData, PosProduct } from "@/features/pos/queries";
+import { usePosCatalog } from "@/features/pos/use-pos-catalog";
+import { formatTanggalWaktu } from "@/lib/datetime";
 import { formatRupiah, mulQty } from "@/lib/money";
+import { mulQtyDecimal } from "@/lib/qty";
 
 type CartLine = {
   key: string;
@@ -114,11 +116,21 @@ export function PosScreen({ data }: { data: PosData }) {
   const shift = data.shift;
   const router = useRouter();
 
-  const [products, setProducts] = useState<PosProduct[]>(data.products);
   const [query, setQuery] = useState("");
   const [lines, setLines] = useState<CartLine[]>([]);
   const [customerId, setCustomerId] = useState("");
   const [tierId, setTierId] = useState<string | null>(data.defaultTierId);
+  const catalog = usePosCatalog({
+    tenantId: data.tenantId,
+    outletId: shift?.outletId ?? "",
+    tierId,
+    defaultTierId: data.defaultTierId,
+    query,
+    initialProducts: data.products,
+    initialCustomers: data.customers,
+  });
+  const products = catalog.products;
+  const customers = catalog.customers;
   const [payments, setPayments] = useState<PaymentLine[]>(() => [
     newPayment("tunai"),
   ]);
@@ -133,19 +145,11 @@ export function PosScreen({ data }: { data: PosData }) {
   const inFlightRef = useRef<Set<string>>(new Set());
   const holdRef = useRef<() => void>(() => {});
 
-  const customer: PosCustomer | undefined = data.customers.find(
+  const customer: PosCustomer | undefined = customers.find(
     (row) => row.id === customerId
   );
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return products;
-    return products.filter((product) =>
-      [product.name, product.sku ?? "", product.barcode ?? ""].some((value) =>
-        value.toLowerCase().includes(q)
-      )
-    );
-  }, [products, query]);
+  const filtered = catalog.results;
 
   const total = lines.reduce((sum, line) => sum + lineTotal(line), 0);
 
@@ -294,18 +298,12 @@ export function PosScreen({ data }: { data: PosData }) {
 
   function onCustomerChange(value: string) {
     setCustomerId(value);
-    const nextCustomer = data.customers.find((row) => row.id === value);
+    const nextCustomer = customers.find((row) => row.id === value);
     const nextTier = nextCustomer?.tierId ?? data.defaultTierId;
     setTierId(nextTier);
     setLines((prev) =>
       prev.map((line) => ({ ...line, resolvedFor: "", pricing: true }))
     );
-
-    void getPosCatalogAction(nextTier).then((result) => {
-      if (result.products.length > 0 || result.error === null) {
-        setProducts(result.products);
-      }
-    });
   }
 
   function setCashAmount(value: string) {
@@ -399,7 +397,7 @@ export function PosScreen({ data }: { data: PosData }) {
     );
     setCustomerId(hold.customerId);
 
-    const nextCustomer = data.customers.find(
+    const nextCustomer = customers.find(
       (row) => row.id === hold.customerId
     );
     const nextTier = nextCustomer?.tierId ?? data.defaultTierId;
@@ -411,10 +409,6 @@ export function PosScreen({ data }: { data: PosData }) {
     const next = holds.filter((row) => row.id !== hold.id);
     setHolds(next);
     writeHolds(data.tenantId, next);
-
-    void getPosCatalogAction(nextTier).then((result) => {
-      if (result.error === null) setProducts(result.products);
-    });
   }
 
   function deleteHold(id: string) {
@@ -425,7 +419,8 @@ export function PosScreen({ data }: { data: PosData }) {
 
   const stockWarning = lines.some(
     (line) =>
-      line.trackStock && line.qty * line.factor > line.stockQty + 1e-9
+      line.trackStock &&
+      mulQtyDecimal(line.qty, line.factor) > line.stockQty + 1e-9
   );
 
   function onSearchKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -509,9 +504,7 @@ export function PosScreen({ data }: { data: PosData }) {
         setCustomerId("");
         setTierId(data.defaultTierId);
         router.refresh();
-        void getPosCatalogAction(data.defaultTierId).then((res) => {
-          if (res.error === null) setProducts(res.products);
-        });
+        void catalog.sync();
       }
     });
   }
@@ -521,14 +514,67 @@ export function PosScreen({ data }: { data: PosData }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Kasir</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            {data.tenantName} &middot; {shift?.outletName} &middot; shift dibuka{" "}
-            {shift
-              ? new Intl.DateTimeFormat("id-ID", {
-                  timeStyle: "short",
-                }).format(new Date(shift.openedAt))
-              : ""}
-          </p>
+          <div className="text-muted-foreground mt-2 flex flex-col gap-1 text-sm">
+            <div
+              className="flex flex-wrap items-center gap-2"
+              role="status"
+              aria-live="polite"
+            >
+              {catalog.isOffline ? (
+                <span className="inline-flex items-center gap-1.5 font-semibold text-destructive">
+                  <WifiOff className="h-4 w-4" aria-hidden="true" />
+                  Offline &mdash; pencarian dari cache lokal
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 font-medium">
+                  <Wifi className="h-4 w-4" aria-hidden="true" />
+                  Online
+                </span>
+              )}
+              <span aria-hidden="true">&middot;</span>
+              <span>
+                {catalog.lastSyncedAt
+                  ? `Terakhir sinkron ${formatTanggalWaktu(catalog.lastSyncedAt)}`
+                  : "Cache lokal belum tersedia"}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 min-h-11 gap-1.5 px-3 text-xs"
+                onClick={() => void catalog.sync()}
+                disabled={catalog.isOffline || catalog.syncing}
+                title={
+                  catalog.isOffline ? "Butuh koneksi internet" : undefined
+                }
+              >
+                <RefreshCw
+                  className={`h-3.5 w-3.5 ${
+                    catalog.syncing ? "animate-spin" : ""
+                  }`}
+                  aria-hidden="true"
+                />
+                {catalog.syncing ? "Menyinkronkan..." : "Sinkron ulang"}
+              </Button>
+            </div>
+            <p>
+              {data.tenantName} &middot; {shift?.outletName} &middot; shift dibuka{" "}
+              {shift
+                ? new Intl.DateTimeFormat("id-ID", {
+                    timeStyle: "short",
+                  }).format(new Date(shift.openedAt))
+                : ""}
+            </p>
+            {catalog.isOffline ? (
+              <p className="text-xs">
+                Sambungkan internet untuk memperbarui cache.
+              </p>
+            ) : null}
+            {catalog.error ? (
+              <p className="text-destructive text-xs" role="alert">
+                {catalog.error}
+              </p>
+            ) : null}
+          </div>
         </div>
         <div className="flex flex-wrap gap-3 text-sm">
           <Link
@@ -557,7 +603,11 @@ export function PosScreen({ data }: { data: PosData }) {
 
           {products.length === 0 ? (
             <p className="text-muted-foreground text-sm">
-              Belum ada produk aktif. Tambah produk dulu di menu Produk.
+              {catalog.isOffline
+                ? "Katalog belum tersimpan di perangkat ini. Sambungkan internet lalu buka kasir sekali untuk mengisi cache."
+                : catalog.status === "loading"
+                  ? "Menyiapkan katalog lokal..."
+                  : "Belum ada produk aktif. Tambah produk dulu di menu Produk."}
             </p>
           ) : filtered.length === 0 ? (
             <p className="text-muted-foreground text-sm">
@@ -618,7 +668,7 @@ export function PosScreen({ data }: { data: PosData }) {
                   );
                   const overStock =
                     line.trackStock &&
-                    line.qty * line.factor > line.stockQty + 1e-9;
+                    mulQtyDecimal(line.qty, line.factor) > line.stockQty + 1e-9;
 
                   return (
                     <li key={line.key} className="flex flex-col gap-2 p-3">
@@ -769,7 +819,7 @@ export function PosScreen({ data }: { data: PosData }) {
                   className="h-11 rounded-md border border-input bg-background px-2"
                 >
                   <option value="">Tanpa pelanggan (Umum)</option>
-                  {data.customers.map((row) => (
+                  {customers.map((row) => (
                     <option key={row.id} value={row.id}>
                       {row.name}
                     </option>

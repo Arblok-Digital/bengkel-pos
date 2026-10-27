@@ -13,7 +13,8 @@
 // menemukan apa pun di mode dev. Handler di bawah bekerja sama di dev dan
 // produksi, dan tetap tidak menyimpan HTML halaman lain.
 //
-// Cache katalog offline (Dexie) menyusul di T10.2.
+// Cache katalog offline (Dexie) dikelola di src/lib/offline; service worker
+// sengaja tidak menyimpan HTML/response API ber-auntentikasi.
 
 import type { PrecacheEntry, RouteHandlerCallback, SerwistGlobalConfig } from "serwist";
 import { CacheFirst, Serwist, StaleWhileRevalidate } from "serwist";
