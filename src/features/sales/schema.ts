@@ -27,3 +27,31 @@ export const receiptSettingsSchema = z.object({
 });
 
 export type ReceiptSettingsInput = z.infer<typeof receiptSettingsSchema>;
+
+export const voidSaleSchema = z.object({
+  saleId: z.guid(),
+  reason: z
+    .string()
+    .trim()
+    .min(3, "Alasan void wajib diisi (minimal 3 karakter)")
+    .max(300, "Alasan maksimal 300 karakter"),
+  clientUuid: z.guid(),
+});
+
+export const saleReturnSchema = z.object({
+  saleId: z.guid(),
+  reason: z
+    .string()
+    .trim()
+    .min(3, "Alasan retur wajib diisi (minimal 3 karakter)")
+    .max(300, "Alasan maksimal 300 karakter"),
+  clientUuid: z.guid(),
+  items: z
+    .array(
+      z.object({
+        saleItemId: z.guid(),
+        qty: z.coerce.number().positive("Qty retur harus lebih dari 0"),
+      })
+    )
+    .min(1, "Isi qty retur minimal satu item"),
+});

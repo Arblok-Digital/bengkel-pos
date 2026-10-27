@@ -77,12 +77,20 @@ export default async function SalesPage() {
                     {statusLabel[row.status] ?? row.status}
                   </td>
                   <td className="p-3">
-                    <Link
-                      href={`/struk/${row.id}`}
-                      className="underline-offset-4 hover:underline"
-                    >
-                      Struk
-                    </Link>
+                    <div className="flex gap-3">
+                      <Link
+                        href={`/penjualan/${row.id}`}
+                        className="underline-offset-4 hover:underline"
+                      >
+                        Detail
+                      </Link>
+                      <Link
+                        href={`/struk/${row.id}`}
+                        className="underline-offset-4 hover:underline"
+                      >
+                        Struk
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               ))

@@ -4,9 +4,15 @@ import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/types";
-import { receiptSettingsSchema } from "./schema";
+import { formatRupiah } from "@/lib/money";
+import { receiptSettingsSchema, saleReturnSchema, voidSaleSchema } from "./schema";
 
 export type ReceiptSettingsState = {
+  error: string | null;
+  success: string | null;
+};
+
+export type SaleMutationState = {
   error: string | null;
   success: string | null;
 };
@@ -91,4 +97,120 @@ export async function saveReceiptSettingsAction(
   revalidatePath("/pengaturan");
   revalidatePath("/penjualan");
   return { error: null, success: "Pengaturan struk disimpan." };
+}
+
+function knownSaleError(message: string): boolean {
+  return [
+    "berhak",
+    "wajib",
+    "sudah",
+    "retur",
+    "tidak ditemukan",
+    "melebihi",
+    "void",
+    "client_uuid",
+  ].some((fragment) => message.toLowerCase().includes(fragment));
+}
+
+export async function voidSaleAction(
+  _prev: SaleMutationState,
+  formData: FormData
+): Promise<SaleMutationState> {
+  const parsed = voidSaleSchema.safeParse({
+    saleId: str(formData, "saleId"),
+    reason: str(formData, "reason"),
+    clientUuid: str(formData, "clientUuid"),
+  });
+
+  if (!parsed.success) {
+    return {
+      error: parsed.error.issues[0]?.message ?? "Isian void tidak valid.",
+      success: null,
+    };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("void_sale", {
+    p_sale_id: parsed.data.saleId,
+    p_reason: parsed.data.reason,
+    p_client_uuid: parsed.data.clientUuid,
+  });
+
+  if (error) {
+    return {
+      error: knownSaleError(error.message)
+        ? error.message
+        : "Gagal void penjualan.",
+      success: null,
+    };
+  }
+
+  const row = (data ?? {}) as Record<string, Json | undefined>;
+  revalidatePath("/penjualan");
+  revalidatePath(`/penjualan/${parsed.data.saleId}`);
+  revalidatePath("/stok");
+  revalidatePath("/kasir");
+
+  return {
+    error: null,
+    success: `Penjualan ${String(row.invoice_no ?? "")} di-void.`,
+  };
+}
+
+export async function returnSaleAction(
+  _prev: SaleMutationState,
+  formData: FormData
+): Promise<SaleMutationState> {
+  const items: { saleItemId: string; qty: number }[] = [];
+  for (const [key, value] of formData.entries()) {
+    if (!key.startsWith("ret_") || typeof value !== "string") continue;
+    const qty = Number(value);
+    if (!Number.isFinite(qty) || qty <= 0) continue;
+    items.push({ saleItemId: key.slice(4), qty });
+  }
+
+  const parsed = saleReturnSchema.safeParse({
+    saleId: str(formData, "saleId"),
+    reason: str(formData, "reason"),
+    clientUuid: str(formData, "clientUuid"),
+    items,
+  });
+
+  if (!parsed.success) {
+    return {
+      error: parsed.error.issues[0]?.message ?? "Isian retur tidak valid.",
+      success: null,
+    };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("create_sale_return", {
+    p_sale_id: parsed.data.saleId,
+    p_items: parsed.data.items.map((item) => ({
+      sale_item_id: item.saleItemId,
+      qty: item.qty,
+    })) as unknown as Json,
+    p_reason: parsed.data.reason,
+    p_client_uuid: parsed.data.clientUuid,
+  });
+
+  if (error) {
+    return {
+      error: knownSaleError(error.message)
+        ? error.message
+        : "Gagal menyimpan retur.",
+      success: null,
+    };
+  }
+
+  const row = (data ?? {}) as Record<string, Json | undefined>;
+  revalidatePath("/penjualan");
+  revalidatePath(`/penjualan/${parsed.data.saleId}`);
+  revalidatePath("/stok");
+  revalidatePath("/kasir");
+
+  return {
+    error: null,
+    success: `Retur tersimpan: ${formatRupiah(Number(row.total ?? 0))}.`,
+  };
 }

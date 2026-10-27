@@ -411,16 +411,80 @@ isOneToOne: false
       referencedColumns: ["tenant_id","id"]
     }
                   ]
-                },"sales": {
+                },"sale_return_items": {
                   Row: {
-                    "cashier_id": string,"change_amount": number,"client_uuid": string,"created_at": string,"created_by": string | null,"customer_id": string | null,"discount": number,"id": string,"invoice_no": string,"note": string | null,"outlet_id": string,"paid_amount": number,"shift_id": string | null,"sold_at": string,"status": string,"subtotal": number,"tax": number,"tenant_id": string,"total": number,"updated_at": string,"vehicle_id": string | null,"work_order_id": string | null
+                    "created_at": string,"id": string,"line_total": number,"product_id": string,"qty": number,"qty_base": number,"return_id": string,"sale_item_id": string,"tenant_id": string,"unit_price": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "cashier_id": string,"change_amount"?: number,"client_uuid": string,"created_at"?: string,"created_by"?: string | null,"customer_id"?: string | null,"discount"?: number,"id"?: string,"invoice_no": string,"note"?: string | null,"outlet_id": string,"paid_amount": number,"shift_id"?: string | null,"sold_at"?: string,"status": string,"subtotal": number,"tax"?: number,"tenant_id": string,"total": number,"updated_at"?: string,"vehicle_id"?: string | null,"work_order_id"?: string | null
+                    "created_at"?: string,"id"?: string,"line_total": number,"product_id": string,"qty": number,"qty_base": number,"return_id": string,"sale_item_id": string,"tenant_id": string,"unit_price": number
                   }
                   Update: {
-                    "cashier_id"?: string,"change_amount"?: number,"client_uuid"?: string,"created_at"?: string,"created_by"?: string | null,"customer_id"?: string | null,"discount"?: number,"id"?: string,"invoice_no"?: string,"note"?: string | null,"outlet_id"?: string,"paid_amount"?: number,"shift_id"?: string | null,"sold_at"?: string,"status"?: string,"subtotal"?: number,"tax"?: number,"tenant_id"?: string,"total"?: number,"updated_at"?: string,"vehicle_id"?: string | null,"work_order_id"?: string | null
+                    "created_at"?: string,"id"?: string,"line_total"?: number,"product_id"?: string,"qty"?: number,"qty_base"?: number,"return_id"?: string,"sale_item_id"?: string,"tenant_id"?: string,"unit_price"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "sale_return_items_product_same_tenant"
+      columns: ["tenant_id","product_id"]
+isOneToOne: false
+      referencedRelation: "products"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "sale_return_items_return_same_tenant"
+      columns: ["tenant_id","return_id"]
+isOneToOne: false
+      referencedRelation: "sale_returns"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "sale_return_items_sale_item_same_tenant"
+      columns: ["tenant_id","sale_item_id"]
+isOneToOne: false
+      referencedRelation: "sale_items"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "sale_return_items_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"sale_returns": {
+                  Row: {
+                    "client_uuid": string,"created_at": string,"created_by": string | null,"id": string,"reason": string,"sale_id": string,"tenant_id": string,"total": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client_uuid": string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"reason": string,"sale_id": string,"tenant_id": string,"total"?: number
+                  }
+                  Update: {
+                    "client_uuid"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"reason"?: string,"sale_id"?: string,"tenant_id"?: string,"total"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "sale_returns_sale_same_tenant"
+      columns: ["tenant_id","sale_id"]
+isOneToOne: false
+      referencedRelation: "sales"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "sale_returns_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"sales": {
+                  Row: {
+                    "cashier_id": string,"change_amount": number,"client_uuid": string,"created_at": string,"created_by": string | null,"customer_id": string | null,"discount": number,"id": string,"invoice_no": string,"note": string | null,"outlet_id": string,"paid_amount": number,"shift_id": string | null,"sold_at": string,"status": string,"subtotal": number,"tax": number,"tenant_id": string,"total": number,"updated_at": string,"vehicle_id": string | null,"void_client_uuid": string | null,"void_reason": string | null,"voided_at": string | null,"voided_by": string | null,"work_order_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cashier_id": string,"change_amount"?: number,"client_uuid": string,"created_at"?: string,"created_by"?: string | null,"customer_id"?: string | null,"discount"?: number,"id"?: string,"invoice_no": string,"note"?: string | null,"outlet_id": string,"paid_amount": number,"shift_id"?: string | null,"sold_at"?: string,"status": string,"subtotal": number,"tax"?: number,"tenant_id": string,"total": number,"updated_at"?: string,"vehicle_id"?: string | null,"void_client_uuid"?: string | null,"void_reason"?: string | null,"voided_at"?: string | null,"voided_by"?: string | null,"work_order_id"?: string | null
+                  }
+                  Update: {
+                    "cashier_id"?: string,"change_amount"?: number,"client_uuid"?: string,"created_at"?: string,"created_by"?: string | null,"customer_id"?: string | null,"discount"?: number,"id"?: string,"invoice_no"?: string,"note"?: string | null,"outlet_id"?: string,"paid_amount"?: number,"shift_id"?: string | null,"sold_at"?: string,"status"?: string,"subtotal"?: number,"tax"?: number,"tenant_id"?: string,"total"?: number,"updated_at"?: string,"vehicle_id"?: string | null,"void_client_uuid"?: string | null,"void_reason"?: string | null,"voided_at"?: string | null,"voided_by"?: string | null,"work_order_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -666,6 +730,9 @@ isOneToOne: false
 "create_sale":
 { Args: { "p_client_uuid": string,"p_customer_id": string,"p_items": Json,"p_note": string,"p_outlet_id": string,"p_payments": Json,"p_shift_id": string,"p_tenant_id": string,"p_vehicle_id": string,"p_work_order_id": string }; Returns: Json
                            },
+"create_sale_return":
+{ Args: { "p_client_uuid": string,"p_items": Json,"p_reason": string,"p_sale_id": string }; Returns: Json
+                           },
 "create_stock_opname":
 { Args: { "p_note": string,"p_outlet_id": string,"p_tenant_id": string }; Returns: string
                            },
@@ -705,6 +772,9 @@ isOneToOne: false
                            },
 "shift_expected_cash":
 { Args: { "p_shift_id": string }; Returns: number
+                           },
+"void_sale":
+{ Args: { "p_client_uuid": string,"p_reason": string,"p_sale_id": string }; Returns: Json
                            }
           }
           Enums: {

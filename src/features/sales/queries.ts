@@ -238,6 +238,185 @@ export type SaleListRow = {
   customerName: string | null;
 };
 
+export type SaleDetailItem = {
+  id: string;
+  name: string;
+  qty: number;
+  unitName: string;
+  unitPrice: number;
+  lineTotal: number;
+  returnedQty: number;
+  remainingQty: number;
+  trackStock: boolean;
+};
+
+export type SaleReturnRow = {
+  id: string;
+  createdAt: string;
+  reason: string;
+  total: number;
+  items: { id: string; name: string; qty: number; unitName: string }[];
+};
+
+export type SaleDetail = {
+  id: string;
+  invoiceNo: string;
+  soldAt: string;
+  status: string;
+  invoiceTotal: number;
+  paidAmount: number;
+  outletName: string;
+  customerName: string | null;
+  note: string | null;
+  voidReason: string | null;
+  canManage: boolean;
+  items: SaleDetailItem[];
+  returns: SaleReturnRow[];
+};
+
+export async function getSaleDetail(
+  saleId: string
+): Promise<SaleDetail | null> {
+  const base = await getCatalog();
+  if (!base) return null;
+
+  const supabase = await createClient();
+  const { data: sale } = await supabase
+    .from("sales")
+    .select(
+      "id, invoice_no, sold_at, status, total, paid_amount, outlet_id, customer_id, note, void_reason"
+    )
+    .eq("tenant_id", base.tenantId)
+    .eq("id", saleId)
+    .maybeSingle();
+
+  if (!sale) return null;
+
+  const [itemsRes, returnsRes, productsRes, unitsRes, outletRes] =
+    await Promise.all([
+      supabase
+        .from("sale_items")
+        .select("id, product_id, unit_id, qty, unit_price, line_total")
+        .eq("tenant_id", base.tenantId)
+        .eq("sale_id", saleId)
+        .order("created_at"),
+      supabase
+        .from("sale_returns")
+        .select("id, reason, total, created_at")
+        .eq("tenant_id", base.tenantId)
+        .eq("sale_id", saleId)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("products")
+        .select("id, name, track_stock")
+        .eq("tenant_id", base.tenantId),
+      supabase.from("units").select("id, name").eq("tenant_id", base.tenantId),
+      supabase
+        .from("outlets")
+        .select("name")
+        .eq("tenant_id", base.tenantId)
+        .eq("id", sale.outlet_id)
+        .maybeSingle(),
+    ]);
+
+  const returnIds = (returnsRes.data ?? []).map((row) => row.id);
+  type ReturnItemRow = {
+    id: string;
+    return_id: string;
+    sale_item_id: string;
+    product_id: string;
+    qty: number;
+  };
+  let returnItems: ReturnItemRow[] = [];
+  if (returnIds.length > 0) {
+    const { data } = await supabase
+      .from("sale_return_items")
+      .select("id, return_id, sale_item_id, product_id, qty")
+      .eq("tenant_id", base.tenantId)
+      .in("return_id", returnIds);
+    returnItems = data ?? [];
+  }
+
+  const saleItemUnit = new Map(
+    (itemsRes.data ?? []).map((row) => [row.id, row.unit_id])
+  );
+
+  const productNames = new Map(
+    (productsRes.data ?? []).map((row) => [row.id, row.name])
+  );
+  const productTrack = new Map(
+    (productsRes.data ?? []).map((row) => [row.id, row.track_stock])
+  );
+  const unitNames = new Map(
+    (unitsRes.data ?? []).map((row) => [row.id, row.name])
+  );
+
+  const returnedByItem = new Map<string, number>();
+  for (const row of returnItems ?? []) {
+    returnedByItem.set(
+      row.sale_item_id,
+      (returnedByItem.get(row.sale_item_id) ?? 0) + Number(row.qty)
+    );
+  }
+
+  let customerName: string | null = null;
+  if (sale.customer_id) {
+    const { data: customer } = await supabase
+      .from("customers")
+      .select("name")
+      .eq("tenant_id", base.tenantId)
+      .eq("id", sale.customer_id)
+      .maybeSingle();
+    customerName = customer?.name ?? null;
+  }
+
+  const items: SaleDetailItem[] = (itemsRes.data ?? []).map((row) => {
+    const returnedQty = returnedByItem.get(row.id) ?? 0;
+    return {
+      id: row.id,
+      name: productNames.get(row.product_id) ?? "—",
+      qty: Number(row.qty),
+      unitName: unitNames.get(row.unit_id) ?? "",
+      unitPrice: Number(row.unit_price),
+      lineTotal: Number(row.line_total),
+      returnedQty,
+      remainingQty: Math.max(0, Number(row.qty) - returnedQty),
+      trackStock: productTrack.get(row.product_id) ?? false,
+    };
+  });
+
+  const returns: SaleReturnRow[] = (returnsRes.data ?? []).map((row) => ({
+    id: row.id,
+    createdAt: row.created_at,
+    reason: row.reason,
+    total: Number(row.total),
+    items: (returnItems ?? [])
+      .filter((item) => item.return_id === row.id)
+      .map((item) => ({
+        id: item.id,
+        name: productNames.get(item.product_id) ?? "—",
+        qty: Number(item.qty),
+        unitName: unitNames.get(saleItemUnit.get(item.sale_item_id) ?? "") ?? "",
+      })),
+  }));
+
+  return {
+    id: sale.id,
+    invoiceNo: sale.invoice_no,
+    soldAt: sale.sold_at,
+    status: sale.status,
+    invoiceTotal: Number(sale.total),
+    paidAmount: Number(sale.paid_amount),
+    outletName: outletRes.data?.name ?? "—",
+    customerName,
+    note: sale.note,
+    voidReason: sale.void_reason,
+    canManage: ["owner", "admin"].includes(base.role),
+    items,
+    returns,
+  };
+}
+
 export async function getRecentSales(limit = 50): Promise<{
   tenantName: string;
   rows: SaleListRow[];

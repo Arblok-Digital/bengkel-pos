@@ -163,6 +163,7 @@ export function PosScreen({ data }: { data: PosData }) {
     lines.length > 0 &&
     total > 0 &&
     !pending &&
+    !lines.some((line) => line.pricing) &&
     (cashPaid >= total || customerId !== "");
 
   // Harga selalu dari server (tier + harga grosir). Jalankan saat qty/satuan/tier berubah.
