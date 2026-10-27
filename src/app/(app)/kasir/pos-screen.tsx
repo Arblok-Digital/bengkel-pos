@@ -563,7 +563,14 @@ export function PosScreen({ data }: { data: PosData }) {
       const formData = new FormData();
       formData.set("payload", JSON.stringify(payload));
 
-      const result = await createSaleAction(initialState, formData);
+      let result: CreateSaleState;
+      try {
+        result = await createSaleAction(initialState, formData);
+      } catch {
+        // Terputus di tengah jalan saat memanggil server action: amankan ke antrean.
+        await enqueueOffline(payload, outletId);
+        return;
+      }
 
       // Server tidak terjangkau (bukan salah data): amankan ke antrean.
       if (result.offline) {
