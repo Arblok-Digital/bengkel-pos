@@ -70,7 +70,7 @@ begin
     ('f7000000-0000-0000-0000-000000000002', v_tenant,
      'f6000000-0000-0000-0000-000000000001', v_outlet, -3, 'sale', 'Penjualan demo', v_user),
     ('f7000000-0000-0000-0000-000000000003', v_tenant,
-     'f6000000-0000-0000-0000-000000000002', v_outlet, 20, 'adjustment', 'Stok awal demo', v_user),
+     'f6000000-0000-0000-0000-000000000002', v_outlet, 500, 'adjustment', 'Stok awal demo', v_user),
     ('f7000000-0000-0000-0000-000000000004', v_tenant,
      'f6000000-0000-0000-0000-000000000002', v_outlet, -18, 'sale', 'Penjualan demo', v_user)
   on conflict (id) do nothing;

@@ -36,6 +36,9 @@ export default async function AppLayout({
             <Link href="/penjualan" className="hover:underline">
               Penjualan
             </Link>
+            <Link href="/piutang" className="hover:underline">
+              Piutang
+            </Link>
             <Link href="/katalog" className="hover:underline">
               Katalog
             </Link>
