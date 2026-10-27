@@ -477,14 +477,14 @@ isOneToOne: false
                   ]
                 },"sales": {
                   Row: {
-                    "cashier_id": string,"change_amount": number,"client_uuid": string,"created_at": string,"created_by": string | null,"customer_id": string | null,"discount": number,"id": string,"invoice_no": string,"note": string | null,"outlet_id": string,"paid_amount": number,"shift_id": string | null,"sold_at": string,"status": string,"subtotal": number,"tax": number,"tenant_id": string,"total": number,"updated_at": string,"vehicle_id": string | null,"void_client_uuid": string | null,"void_reason": string | null,"voided_at": string | null,"voided_by": string | null,"work_order_id": string | null
+                    "cashier_id": string,"change_amount": number,"client_uuid": string,"created_at": string,"created_by": string | null,"customer_id": string | null,"discount": number,"id": string,"invoice_no": string,"local_invoice_no": string | null,"needs_review_reason": string | null,"note": string | null,"outlet_id": string,"paid_amount": number,"reviewed_at": string | null,"reviewed_by": string | null,"shift_id": string | null,"sold_at": string,"status": string,"subtotal": number,"synced_at": string | null,"tax": number,"tenant_id": string,"total": number,"updated_at": string,"vehicle_id": string | null,"void_client_uuid": string | null,"void_reason": string | null,"voided_at": string | null,"voided_by": string | null,"work_order_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "cashier_id": string,"change_amount"?: number,"client_uuid": string,"created_at"?: string,"created_by"?: string | null,"customer_id"?: string | null,"discount"?: number,"id"?: string,"invoice_no": string,"note"?: string | null,"outlet_id": string,"paid_amount": number,"shift_id"?: string | null,"sold_at"?: string,"status": string,"subtotal": number,"tax"?: number,"tenant_id": string,"total": number,"updated_at"?: string,"vehicle_id"?: string | null,"void_client_uuid"?: string | null,"void_reason"?: string | null,"voided_at"?: string | null,"voided_by"?: string | null,"work_order_id"?: string | null
+                    "cashier_id": string,"change_amount"?: number,"client_uuid": string,"created_at"?: string,"created_by"?: string | null,"customer_id"?: string | null,"discount"?: number,"id"?: string,"invoice_no": string,"local_invoice_no"?: string | null,"needs_review_reason"?: string | null,"note"?: string | null,"outlet_id": string,"paid_amount": number,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"shift_id"?: string | null,"sold_at"?: string,"status": string,"subtotal": number,"synced_at"?: string | null,"tax"?: number,"tenant_id": string,"total": number,"updated_at"?: string,"vehicle_id"?: string | null,"void_client_uuid"?: string | null,"void_reason"?: string | null,"voided_at"?: string | null,"voided_by"?: string | null,"work_order_id"?: string | null
                   }
                   Update: {
-                    "cashier_id"?: string,"change_amount"?: number,"client_uuid"?: string,"created_at"?: string,"created_by"?: string | null,"customer_id"?: string | null,"discount"?: number,"id"?: string,"invoice_no"?: string,"note"?: string | null,"outlet_id"?: string,"paid_amount"?: number,"shift_id"?: string | null,"sold_at"?: string,"status"?: string,"subtotal"?: number,"tax"?: number,"tenant_id"?: string,"total"?: number,"updated_at"?: string,"vehicle_id"?: string | null,"void_client_uuid"?: string | null,"void_reason"?: string | null,"voided_at"?: string | null,"voided_by"?: string | null,"work_order_id"?: string | null
+                    "cashier_id"?: string,"change_amount"?: number,"client_uuid"?: string,"created_at"?: string,"created_by"?: string | null,"customer_id"?: string | null,"discount"?: number,"id"?: string,"invoice_no"?: string,"local_invoice_no"?: string | null,"needs_review_reason"?: string | null,"note"?: string | null,"outlet_id"?: string,"paid_amount"?: number,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"shift_id"?: string | null,"sold_at"?: string,"status"?: string,"subtotal"?: number,"synced_at"?: string | null,"tax"?: number,"tenant_id"?: string,"total"?: number,"updated_at"?: string,"vehicle_id"?: string | null,"void_client_uuid"?: string | null,"void_reason"?: string | null,"voided_at"?: string | null,"voided_by"?: string | null,"work_order_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -721,7 +721,10 @@ isOneToOne: false
                 }
           }
           Functions: {
-            "adjust_stock":
+            "_sales_core":
+{ Args: { "p_client_uuid": string,"p_customer_id": string,"p_items": Json,"p_local_invoice_no": string,"p_note": string,"p_offline": boolean,"p_outlet_id": string,"p_payments": Json,"p_shift_id": string,"p_tenant_id": string,"p_vehicle_id": string,"p_work_order_id": string }; Returns: Json
+                           },
+"adjust_stock":
 { Args: { "p_client_uuid": string,"p_outlet_id": string,"p_product_id": string,"p_qty_base": number,"p_reason": string,"p_tenant_id": string }; Returns: string
                            },
 "close_cash_shift":
@@ -767,11 +770,17 @@ isOneToOne: false
 "resolve_price":
 { Args: { "p_product_id": string,"p_qty": number,"p_tenant_id": string,"p_tier_id": string,"p_unit_id": string }; Returns: number
                            },
+"resolve_sale_review":
+{ Args: { "p_action": string,"p_reason": string,"p_sale_id": string }; Returns: Json
+                           },
 "save_stock_opname_counts":
 { Args: { "p_counts": Json,"p_opname_id": string }; Returns: number
                            },
 "shift_expected_cash":
 { Args: { "p_shift_id": string }; Returns: number
+                           },
+"sync_sale":
+{ Args: { "p_client_uuid": string,"p_customer_id": string,"p_items": Json,"p_local_invoice_no": string,"p_note": string,"p_outlet_id": string,"p_payments": Json,"p_shift_id": string,"p_tenant_id": string,"p_vehicle_id": string,"p_work_order_id": string }; Returns: Json
                            },
 "void_sale":
 { Args: { "p_client_uuid": string,"p_reason": string,"p_sale_id": string }; Returns: Json

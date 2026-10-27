@@ -42,6 +42,8 @@ export type UsePosCatalogResult = {
   lastSyncedAt: string | null;
   error: string | null;
   sync: () => Promise<void>;
+  /** Baca ulang cache (mis. setelah stok lokal dikurangi transaksi offline). */
+  reload: () => Promise<void>;
 };
 
 const SEARCH_DEBOUNCE_MS = 80;
@@ -177,6 +179,14 @@ export function usePosCatalog(
     }
   }, [applyRead, scope, scopeKey]);
 
+  const reload = useCallback(async (): Promise<void> => {
+    const targetScope = scope;
+    const targetKey = scopeKey;
+    const read = await readCatalog(getCatalogDb(), targetScope);
+    if (activeScopeKeyRef.current !== targetKey || !read) return;
+    applyRead(read, targetKey);
+  }, [applyRead, scope, scopeKey]);
+
   // Muat cache scope aktif; kalau belum ada, hidrasi dari data SSR lalu
   // revalidasi ke server saat online.
   useEffect(() => {
@@ -291,5 +301,6 @@ export function usePosCatalog(
     lastSyncedAt: loadedScopeKey === scopeKey ? lastSyncedAt : null,
     error,
     sync: runSync,
+    reload,
   };
 }

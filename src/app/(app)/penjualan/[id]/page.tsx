@@ -11,6 +11,7 @@ const statusLabel: Record<string, string> = {
   credit: "Kredit",
   void: "Void",
   draft: "Draft",
+  needs_review: "Perlu review",
 };
 
 function formatQty(value: number): string {
@@ -51,7 +52,9 @@ export default async function SaleDetailPage({
             className={
               detail.status === "void"
                 ? "font-semibold text-destructive"
-                : "font-semibold text-green-700"
+                : detail.status === "needs_review"
+                  ? "font-semibold text-amber-700"
+                  : "font-semibold text-green-700"
             }
           >
             {statusLabel[detail.status] ?? detail.status}
@@ -60,7 +63,15 @@ export default async function SaleDetailPage({
         <p className="text-muted-foreground mt-1 text-sm">
           {formatDateTime(detail.soldAt)} &middot; {detail.outletName}
           {detail.customerName ? ` · ${detail.customerName}` : ""}
+          {detail.localInvoiceNo
+            ? ` · nomor offline ${detail.localInvoiceNo}`
+            : ""}
         </p>
+        {detail.needsReviewReason ? (
+          <p className="mt-2 rounded-md border border-amber-600/40 bg-amber-50 p-2 text-sm text-amber-900">
+            Alasan perlu review: {detail.needsReviewReason}
+          </p>
+        ) : null}
         {detail.voidReason ? (
           <p className="mt-2 text-sm text-destructive">
             Alasan void: {detail.voidReason}

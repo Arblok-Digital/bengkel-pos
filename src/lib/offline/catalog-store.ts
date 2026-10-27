@@ -4,6 +4,7 @@ import type {
   PosProduct,
   PosUnit,
 } from "@/features/pos/queries";
+import { addQtyDecimal } from "@/lib/qty";
 
 import type { OfflineCatalogDb } from "./catalog-db";
 import { searchProducts } from "./catalog-search";
@@ -316,6 +317,45 @@ export async function readCatalog(
     })),
     meta,
   };
+}
+
+export type CachedSaleLine = {
+  productId: string;
+  qtyBase: number;
+};
+
+/**
+ * Kurangi stok di cache lokal untuk transaksi offline. Ini hanya cermin layar
+ * kasir, bukan sumber kebenaran: stok server tetap dipotong oleh create_sale /
+ * resolve_sale_review. Tanpa ini kasir bisa menjual barang yang sama berulang
+ * kali saat offline dan semuanya berakhir needs_review.
+ */
+export async function applyCachedSale(
+  db: OfflineCatalogDb,
+  scopeInput: CatalogScope,
+  lines: readonly CachedSaleLine[]
+): Promise<void> {
+  const scope = normalizeScope(scopeInput);
+  const scopeKey = buildScopeKey(scope);
+
+  await db.transaction("rw", [db.stockLevels, db.products], async () => {
+    for (const line of lines) {
+      const stock = await db.stockLevels.get([scopeKey, line.productId]);
+      if (!stock) continue;
+
+      const product = await db.products.get([scopeKey, line.productId]);
+      const qtyBase = Math.max(0, addQtyDecimal(stock.qtyBase, -line.qtyBase));
+
+      await db.stockLevels.put({
+        ...stock,
+        qtyBase,
+        isLow:
+          Boolean(product?.trackStock) &&
+          stock.minStock > 0 &&
+          qtyBase < stock.minStock,
+      });
+    }
+  });
 }
 
 /** Pencarian instan dari tabel produk Dexie (nama, SKU, barcode). */

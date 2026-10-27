@@ -50,6 +50,17 @@ export const createSaleSchema = z.object({
 
 export type CreateSaleInput = z.infer<typeof createSaleSchema>;
 
+/** Payload replay outbox: sama dengan create_sale + nomor sementara perangkat. */
+export const syncSaleSchema = createSaleSchema.extend({
+  localInvoiceNo: z
+    .string()
+    .trim()
+    .min(1, "Nomor sementara wajib diisi")
+    .max(60, "Nomor sementara terlalu panjang"),
+});
+
+export type SyncSaleInput = z.infer<typeof syncSaleSchema>;
+
 export const priceRequestSchema = z.object({
   productId: z.guid(),
   unitId: z.guid(),

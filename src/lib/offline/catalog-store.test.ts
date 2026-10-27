@@ -7,6 +7,7 @@ import type { PosCustomer, PosProduct } from "@/features/pos/queries";
 import { createCatalogDb, type OfflineCatalogDb } from "./catalog-db";
 import { buildScopeKey, type CatalogScope } from "./catalog-schema";
 import {
+  applyCachedSale,
   clearOfflineCatalog,
   hydrateCatalog,
   readCatalog,
@@ -257,5 +258,32 @@ describe("clearOfflineCatalog", () => {
     expect(await db.products.count()).toBe(0);
     expect(await db.customers.count()).toBe(0);
     expect(await db.meta.count()).toBe(0);
+  });
+});
+
+describe("applyCachedSale", () => {
+  it("mengurangi stok cache dan menandai stok menipis", async () => {
+    await hydrateCatalog(db, scopeA, makeSnapshot());
+
+    await applyCachedSale(db, scopeA, [
+      { productId: "produk-semen", qtyBase: 1.5 },
+    ]);
+
+    const read = await readCatalog(db, scopeA);
+    const semen = read?.products.find((row) => row.id === "produk-semen");
+    expect(semen?.stockQty).toBe(0.5);
+    expect(semen?.isLow).toBe(true);
+  });
+
+  it("tidak membuat stok negatif di layar kasir", async () => {
+    await hydrateCatalog(db, scopeA, makeSnapshot());
+
+    await applyCachedSale(db, scopeA, [
+      { productId: "produk-semen", qtyBase: 99 },
+    ]);
+
+    const read = await readCatalog(db, scopeA);
+    const semen = read?.products.find((row) => row.id === "produk-semen");
+    expect(semen?.stockQty).toBe(0);
   });
 });

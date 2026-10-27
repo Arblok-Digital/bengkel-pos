@@ -20,3 +20,15 @@ export function mulQtyDecimal(qty: number, factor: number): number {
   const scaled = exact >= 0 ? exact + 1e-9 : exact - 1e-9;
   return Math.round(scaled * scale) / scale;
 }
+
+/** Tambah/kurangi qty (delta boleh negatif), dibulatkan 3 desimal. */
+export function addQtyDecimal(value: number, delta: number): number {
+  if (!Number.isFinite(value) || !Number.isFinite(delta)) {
+    throw new TypeError("qty harus angka finite");
+  }
+
+  const scale = 10 ** QTY_DECIMALS;
+  const exact = value + delta;
+  const scaled = exact >= 0 ? exact + 1e-9 : exact - 1e-9;
+  return Math.round(scaled * scale) / scale;
+}

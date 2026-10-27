@@ -8,6 +8,7 @@ import type {
   CachedStockLevel,
   CatalogMeta,
 } from "./catalog-schema";
+import type { OutboxSale } from "./outbox-schema";
 
 export const CATALOG_DB_NAME = "bengkel-pos";
 
@@ -18,6 +19,7 @@ export class OfflineCatalogDb extends Dexie {
   priceBreaks!: Table<CachedPriceBreak, [string, string, string, number]>;
   stockLevels!: Table<CachedStockLevel, [string, string]>;
   customers!: Table<CachedCustomer, [string, string]>;
+  outbox!: Table<OutboxSale, string>;
 
   constructor(name: string = CATALOG_DB_NAME) {
     super(name);
@@ -30,6 +32,10 @@ export class OfflineCatalogDb extends Dexie {
         "[scopeKey+productId+unitId+minQty], scopeKey, productId, tenantId",
       stockLevels: "[scopeKey+productId], scopeKey, tenantId, outletId",
       customers: "[tenantId+id], tenantId, name",
+    });
+    // v2 (T10.3): antrean transaksi offline.
+    this.version(2).stores({
+      outbox: "clientUuid, tenantId, state, [tenantId+state], createdAt",
     });
   }
 }

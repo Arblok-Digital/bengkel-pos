@@ -14,9 +14,12 @@ import {
   type PosProduct,
 } from "./queries";
 import { createSaleSchema, priceRequestSchema } from "./schema";
+import { isNetworkError, saleErrorMessage } from "./sale-error";
 
 export type CreateSaleState = {
   error: string | null;
+  /** True kalau gagal karena jaringan: transaksi harus disimpan ke outbox. */
+  offline: boolean;
   success: {
     saleId: string;
     invoiceNo: string;
@@ -29,7 +32,11 @@ export type CreateSaleState = {
 
 export type PriceResult = { price: number | null; error: string | null };
 
-const initialState: CreateSaleState = { error: null, success: null };
+const initialState: CreateSaleState = {
+  error: null,
+  offline: false,
+  success: null,
+};
 
 function str(formData: FormData, key: string): string {
   const value = formData.get(key);
@@ -83,26 +90,13 @@ export async function createSaleAction(
   });
 
   if (error) {
-    const known = [
-      "berhak",
-      "Stok",
-      "Harga",
-      "Satuan",
-      "Shift",
-      "limit kredit",
-      "Pembayaran",
-      "Minimal",
-      "client_uuid",
-      "Pelanggan",
-      "Outlet",
-      "Produk",
-      "Qty",
-      "Diskon",
-      "Metode",
-    ].some((fragment) => error.message.toLowerCase().includes(fragment.toLowerCase()));
+    const network = isNetworkError(error.message);
     return {
       ...initialState,
-      error: known ? error.message : "Gagal menyimpan transaksi.",
+      offline: network,
+      error: network
+        ? "Koneksi terputus. Transaksi disimpan di perangkat."
+        : saleErrorMessage(error.message, "Gagal menyimpan transaksi."),
     };
   }
 
@@ -111,7 +105,7 @@ export async function createSaleAction(
   revalidatePath("/stok");
 
   return {
-    error: null,
+    ...initialState,
     success: {
       saleId: String(row.sale_id ?? ""),
       invoiceNo: String(row.invoice_no ?? ""),

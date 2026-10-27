@@ -231,11 +231,13 @@ export async function getReceipt(
 export type SaleListRow = {
   id: string;
   invoiceNo: string;
+  localInvoiceNo: string | null;
   soldAt: string;
   status: string;
   total: number;
   outletName: string;
   customerName: string | null;
+  needsReviewReason: string | null;
 };
 
 export type SaleDetailItem = {
@@ -261,6 +263,7 @@ export type SaleReturnRow = {
 export type SaleDetail = {
   id: string;
   invoiceNo: string;
+  localInvoiceNo: string | null;
   soldAt: string;
   status: string;
   invoiceTotal: number;
@@ -269,6 +272,7 @@ export type SaleDetail = {
   customerName: string | null;
   note: string | null;
   voidReason: string | null;
+  needsReviewReason: string | null;
   canManage: boolean;
   items: SaleDetailItem[];
   returns: SaleReturnRow[];
@@ -284,7 +288,7 @@ export async function getSaleDetail(
   const { data: sale } = await supabase
     .from("sales")
     .select(
-      "id, invoice_no, sold_at, status, total, paid_amount, outlet_id, customer_id, note, void_reason"
+      "id, invoice_no, local_invoice_no, sold_at, status, total, paid_amount, outlet_id, customer_id, note, void_reason, needs_review_reason"
     )
     .eq("tenant_id", base.tenantId)
     .eq("id", saleId)
@@ -403,6 +407,7 @@ export async function getSaleDetail(
   return {
     id: sale.id,
     invoiceNo: sale.invoice_no,
+    localInvoiceNo: sale.local_invoice_no,
     soldAt: sale.sold_at,
     status: sale.status,
     invoiceTotal: Number(sale.total),
@@ -411,6 +416,7 @@ export async function getSaleDetail(
     customerName,
     note: sale.note,
     voidReason: sale.void_reason,
+    needsReviewReason: sale.needs_review_reason,
     canManage: ["owner", "admin"].includes(base.role),
     items,
     returns,
@@ -428,7 +434,7 @@ export async function getRecentSales(limit = 50): Promise<{
   const { data } = await supabase
     .from("sales")
     .select(
-      "id, invoice_no, sold_at, status, total, customer_id, outlet_id"
+      "id, invoice_no, local_invoice_no, sold_at, status, total, customer_id, outlet_id, needs_review_reason"
     )
     .eq("tenant_id", base.tenantId)
     .order("sold_at", { ascending: false })
@@ -457,6 +463,7 @@ export async function getRecentSales(limit = 50): Promise<{
     rows: (data ?? []).map((row) => ({
       id: row.id,
       invoiceNo: row.invoice_no,
+      localInvoiceNo: row.local_invoice_no,
       soldAt: row.sold_at,
       status: row.status,
       total: Number(row.total),
@@ -464,6 +471,7 @@ export async function getRecentSales(limit = 50): Promise<{
       customerName: row.customer_id
         ? customerNames.get(row.customer_id) ?? null
         : null,
+      needsReviewReason: row.needs_review_reason,
     })),
   };
 }

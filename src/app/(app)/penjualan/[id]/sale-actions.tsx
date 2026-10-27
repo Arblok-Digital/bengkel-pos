@@ -4,6 +4,7 @@ import { useActionState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
+  resolveSaleReviewAction,
   returnSaleAction,
   voidSaleAction,
   type SaleMutationState,
@@ -21,13 +22,77 @@ export function SaleActions({ detail }: { detail: SaleDetail }) {
     voidSaleAction,
     initialState
   );
+  const [reviewState, reviewAction, reviewPending] = useActionState(
+    resolveSaleReviewAction,
+    initialState
+  );
 
   const returnable = detail.items.filter((item) => item.remainingQty > 0);
-  const canVoid = detail.status !== "void" && detail.returns.length === 0;
+  const needsReview = detail.status === "needs_review";
+  const canVoid =
+    detail.status !== "void" && !needsReview && detail.returns.length === 0;
 
   return (
     <div className="flex flex-col gap-4">
-      {detail.status !== "void" && returnable.length > 0 ? (
+      {needsReview ? (
+        <section className="rounded-lg border border-amber-600/40 bg-amber-50 p-4">
+          <h2 className="text-lg font-semibold">Transaksi perlu review</h2>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Transaksi dibuat saat offline dan tidak bisa diproses otomatis
+            (stok/harga berubah). Setujui untuk memotong stok sekarang, atau
+            batalkan bila barang tidak jadi dijual.
+          </p>
+
+          <form action={reviewAction} className="mt-3 flex flex-col gap-3">
+            <input type="hidden" name="saleId" value={detail.id} />
+
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="font-medium">Catatan review (opsional)</span>
+              <textarea
+                name="reason"
+                rows={2}
+                maxLength={300}
+                placeholder="cth: stok sudah dihitung ulang, barang diambil besok"
+                className="rounded-md border border-input bg-background p-2"
+              />
+            </label>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                type="submit"
+                name="action"
+                value="accept"
+                disabled={reviewPending}
+                className="h-11"
+              >
+                {reviewPending ? "Memproses..." : "Setujui & potong stok"}
+              </Button>
+              <Button
+                type="submit"
+                name="action"
+                value="void"
+                variant="destructive"
+                disabled={reviewPending}
+                className="h-11"
+              >
+                Batalkan transaksi
+              </Button>
+              {reviewState.error ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {reviewState.error}
+                </p>
+              ) : null}
+              {reviewState.success ? (
+                <p className="text-sm text-green-700" role="status">
+                  {reviewState.success}
+                </p>
+              ) : null}
+            </div>
+          </form>
+        </section>
+      ) : null}
+
+      {!needsReview && detail.status !== "void" && returnable.length > 0 ? (
         <section className="rounded-lg border bg-card p-4">
           <h2 className="text-lg font-semibold">Retur barang</h2>
           <p className="text-muted-foreground mt-1 text-sm">

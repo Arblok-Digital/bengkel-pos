@@ -1,6 +1,6 @@
 "use client";
 
-import { Wifi, WifiOff, RefreshCw } from "lucide-react";
+import { CloudUpload, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -8,7 +8,6 @@ import {
   useEffect,
   useRef,
   useState,
-  useTransition,
 } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -19,8 +18,12 @@ import {
 } from "@/features/pos/actions";
 import type { PosCustomer, PosData, PosProduct } from "@/features/pos/queries";
 import { usePosCatalog } from "@/features/pos/use-pos-catalog";
+import { useSaleOutbox } from "@/features/pos/use-sale-outbox";
 import { formatTanggalWaktu } from "@/lib/datetime";
 import { formatRupiah, mulQty } from "@/lib/money";
+import { getCatalogDb } from "@/lib/offline/catalog-db";
+import { applyCachedSale } from "@/lib/offline/catalog-store";
+import type { OutboxSalePayload } from "@/lib/offline/outbox-schema";
 import { mulQtyDecimal } from "@/lib/qty";
 
 type CartLine = {
@@ -94,7 +97,19 @@ function writeHolds(tenantId: string, holds: HeldCart[]): void {
   }
 }
 
-const initialState: CreateSaleState = { error: null, success: null };
+const initialState: CreateSaleState = {
+  error: null,
+  offline: false,
+  success: null,
+};
+
+type SaleNotice = {
+  kind: "queued" | "review";
+  invoiceNo: string;
+  total: number;
+  changeAmount: number;
+  reason: string | null;
+};
 
 function formatQty(value: number): string {
   return value.toLocaleString("id-ID", { maximumFractionDigits: 3 });
@@ -131,13 +146,21 @@ export function PosScreen({ data }: { data: PosData }) {
   });
   const products = catalog.products;
   const customers = catalog.customers;
+  const outbox = useSaleOutbox({
+    tenantId: data.tenantId,
+    onSynced: () => {
+      setNotice(null);
+      void catalog.sync();
+    },
+  });
+  const [notice, setNotice] = useState<SaleNotice | null>(null);
   const [payments, setPayments] = useState<PaymentLine[]>(() => [
     newPayment("tunai"),
   ]);
   const [holds, setHolds] = useState<HeldCart[]>(() => readHolds(data.tenantId));
   const [state, setState] = useState<CreateSaleState>(initialState);
   const [cartError, setCartError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [saving, setSaving] = useState(false);
 
   const searchRef = useRef<HTMLInputElement>(null);
   const paymentRef = useRef<HTMLInputElement>(null);
@@ -166,7 +189,7 @@ export function PosScreen({ data }: { data: PosData }) {
   const canPay =
     lines.length > 0 &&
     total > 0 &&
-    !pending &&
+    !saving &&
     !lines.some((line) => line.pricing) &&
     (cashPaid >= total || customerId !== "");
 
@@ -439,10 +462,47 @@ export function PosScreen({ data }: { data: PosData }) {
     }
   }
 
-  function submit() {
-    if (!shift) return;
+  function resetCart() {
+    clientUuidRef.current = null;
+    setLines([]);
+    setPayments([newPayment("tunai")]);
+    setCustomerId("");
+    setTierId(data.defaultTierId);
+  }
+
+  /** Simpan transaksi ke antrean lokal + kurangi stok layar kasir. */
+  async function enqueueOffline(
+    payload: OutboxSalePayload,
+    outletId: string
+  ): Promise<void> {
+    const row = await outbox.enqueue(payload, tierId);
+
+    await applyCachedSale(
+      getCatalogDb(),
+      { tenantId: data.tenantId, outletId, tierId },
+      lines.map((line) => ({
+        productId: line.productId,
+        qtyBase: mulQtyDecimal(line.qty, line.factor),
+      }))
+    );
+    await catalog.reload();
+
+    resetCart();
+    setState(initialState);
+    setNotice({
+      kind: "queued",
+      invoiceNo: row.localInvoiceNo,
+      total,
+      changeAmount: change,
+      reason: null,
+    });
+  }
+
+  async function submit() {
+    if (!shift || saving) return;
     setCartError(null);
     setState(initialState);
+    setNotice(null);
 
     if (lines.length === 0) {
       setCartError("Keranjang masih kosong.");
@@ -471,10 +531,11 @@ export function PosScreen({ data }: { data: PosData }) {
 
     if (!clientUuidRef.current) clientUuidRef.current = crypto.randomUUID();
 
-    const payload = {
+    const outletId = shift.outletId;
+    const payload: OutboxSalePayload = {
       clientUuid: clientUuidRef.current,
       tenantId: data.tenantId,
-      outletId: shift.outletId,
+      outletId,
       shiftId: shift.id,
       customerId: customerId || undefined,
       items: lines.map((line) => ({
@@ -491,22 +552,34 @@ export function PosScreen({ data }: { data: PosData }) {
       })),
     };
 
-    const formData = new FormData();
-    formData.set("payload", JSON.stringify(payload));
+    setSaving(true);
+    try {
+      // Offline: langsung ke antrean Dexie, dikirim otomatis saat online.
+      if (catalog.isOffline) {
+        await enqueueOffline(payload, outletId);
+        return;
+      }
 
-    startTransition(async () => {
+      const formData = new FormData();
+      formData.set("payload", JSON.stringify(payload));
+
       const result = await createSaleAction(initialState, formData);
+
+      // Server tidak terjangkau (bukan salah data): amankan ke antrean.
+      if (result.offline) {
+        await enqueueOffline(payload, outletId);
+        return;
+      }
+
       setState(result);
       if (result.success) {
-        clientUuidRef.current = null;
-        setLines([]);
-        setPayments([newPayment("tunai")]);
-        setCustomerId("");
-        setTierId(data.defaultTierId);
+        resetCart();
         router.refresh();
         void catalog.sync();
       }
-    });
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -537,6 +610,26 @@ export function PosScreen({ data }: { data: PosData }) {
                   ? `Terakhir sinkron ${formatTanggalWaktu(catalog.lastSyncedAt)}`
                   : "Cache lokal belum tersedia"}
               </span>
+              {outbox.pending + outbox.failed > 0 ? (
+                <>
+                  <span aria-hidden="true">&middot;</span>
+                  <span className="inline-flex items-center gap-1.5 font-semibold text-amber-700">
+                    <CloudUpload className="h-4 w-4" aria-hidden="true" />
+                    {outbox.pending + outbox.failed} transaksi menunggu sinkron
+                  </span>
+                </>
+              ) : null}
+              {outbox.needsReview > 0 ? (
+                <>
+                  <span aria-hidden="true">&middot;</span>
+                  <Link
+                    href="/penjualan?status=needs_review"
+                    className="font-semibold text-amber-700 underline-offset-4 hover:underline"
+                  >
+                    {outbox.needsReview} transaksi perlu review
+                  </Link>
+                </>
+              ) : null}
               <Button
                 type="button"
                 variant="outline"
@@ -555,6 +648,28 @@ export function PosScreen({ data }: { data: PosData }) {
                 />
                 {catalog.syncing ? "Menyinkronkan..." : "Sinkron ulang"}
               </Button>
+              {outbox.pending + outbox.failed > 0 ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 min-h-11 gap-1.5 px-3 text-xs"
+                  onClick={() => void outbox.flush()}
+                  disabled={catalog.isOffline || outbox.syncing}
+                  title={
+                    catalog.isOffline
+                      ? "Butuh koneksi internet untuk mengirim antrean"
+                      : undefined
+                  }
+                >
+                  <CloudUpload
+                    className={`h-3.5 w-3.5 ${
+                      outbox.syncing ? "animate-pulse" : ""
+                    }`}
+                    aria-hidden="true"
+                  />
+                  {outbox.syncing ? "Mengirim..." : "Kirim antrean"}
+                </Button>
+              ) : null}
             </div>
             <p>
               {data.tenantName} &middot; {shift?.outletName} &middot; shift dibuka{" "}
@@ -572,6 +687,11 @@ export function PosScreen({ data }: { data: PosData }) {
             {catalog.error ? (
               <p className="text-destructive text-xs" role="alert">
                 {catalog.error}
+              </p>
+            ) : null}
+            {outbox.error ? (
+              <p className="text-destructive text-xs" role="alert">
+                {outbox.error}
               </p>
             ) : null}
           </div>
@@ -971,7 +1091,7 @@ export function PosScreen({ data }: { data: PosData }) {
                 disabled={!canPay || stockWarning}
                 className="h-12 text-base"
               >
-                {pending ? "Menyimpan..." : "Bayar & simpan"}
+                {saving ? "Menyimpan..." : "Bayar & simpan"}
               </Button>
 
               {cartError ? (
@@ -1069,6 +1189,45 @@ export function PosScreen({ data }: { data: PosData }) {
               >
                 Lihat &amp; cetak struk
               </Link>
+            </div>
+          ) : null}
+
+          {notice ? (
+            <div className="rounded-lg border border-amber-600/40 bg-amber-50 p-4 text-sm">
+              <p className="font-semibold text-amber-900">
+                {notice.kind === "review"
+                  ? `Transaksi tersimpan, perlu review: ${notice.invoiceNo}`
+                  : `Transaksi tersimpan di perangkat: ${notice.invoiceNo}`}
+              </p>
+              <p className="mt-1 text-amber-900">
+                {notice.kind === "review"
+                  ? "Stok atau harga berubah saat sinkron. Pemilik perlu menyelesaikannya di menu Penjualan."
+                  : "Nomor resmi diberikan setelah antrean terkirim. Struk sementara memakai nomor ini."}
+              </p>
+              {notice.reason ? (
+                <p className="mt-1 text-xs text-amber-900">{notice.reason}</p>
+              ) : null}
+              <dl className="mt-2 grid gap-1">
+                <div className="flex justify-between">
+                  <dt>Total</dt>
+                  <dd>{formatRupiah(notice.total)}</dd>
+                </div>
+                <div className="flex justify-between font-semibold">
+                  <dt>Kembalian</dt>
+                  <dd>{formatRupiah(notice.changeAmount)}</dd>
+                </div>
+              </dl>
+              {notice.kind === "queued" && !catalog.isOffline ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-3 h-11"
+                  onClick={() => void outbox.flush()}
+                  disabled={outbox.syncing}
+                >
+                  {outbox.syncing ? "Mengirim..." : "Kirim sekarang"}
+                </Button>
+              ) : null}
             </div>
           ) : null}
         </aside>

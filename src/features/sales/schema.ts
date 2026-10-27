@@ -55,3 +55,14 @@ export const saleReturnSchema = z.object({
     )
     .min(1, "Isi qty retur minimal satu item"),
 });
+
+/** Selesaikan transaksi offline berstatus needs_review. */
+export const resolveSaleReviewSchema = z.object({
+  saleId: z.guid(),
+  action: z.enum(["accept", "void"]),
+  reason: z
+    .string()
+    .trim()
+    .max(300, "Catatan maksimal 300 karakter")
+    .optional(),
+});

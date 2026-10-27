@@ -10,6 +10,7 @@ const statusLabel: Record<string, string> = {
   credit: "Kredit",
   void: "Void",
   draft: "Draft",
+  needs_review: "Perlu review",
 };
 
 function formatDateTime(value: string): string {
@@ -19,22 +20,59 @@ function formatDateTime(value: string): string {
   }).format(new Date(value));
 }
 
-export default async function SalesPage() {
+export default async function SalesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
+  const { status } = await searchParams;
   const data = await getRecentSales();
 
   if (!data) {
     redirect("/onboarding");
   }
 
+  const onlyReview = status === "needs_review";
+  const reviewCount = data.rows.filter(
+    (row) => row.status === "needs_review"
+  ).length;
+  const rows = onlyReview
+    ? data.rows.filter((row) => row.status === "needs_review")
+    : data.rows;
+
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
       <div>
         <h1 className="text-2xl font-bold">Penjualan</h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          {data.tenantName} &middot; {data.rows.length} transaksi terakhir.
+          {data.tenantName} &middot;{" "}
+          {onlyReview
+            ? `${rows.length} transaksi perlu review.`
+            : `${rows.length} transaksi terakhir.`}{" "}
           Buka struk untuk cetak ulang.
         </p>
       </div>
+
+      {reviewCount > 0 ? (
+        <div className="rounded-lg border border-amber-600/40 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="font-semibold">
+            {reviewCount} transaksi perlu review
+          </p>
+          <p className="mt-1">
+            Transaksi dari perangkat offline tidak bisa diproses otomatis karena
+            stok atau harga berubah. Tidak ada yang dibuang: setujui untuk
+            memotong stok, atau batalkan.
+          </p>
+          <Link
+            href={onlyReview ? "/penjualan" : "/penjualan?status=needs_review"}
+            className="mt-2 inline-flex h-11 items-center rounded-md border border-amber-700/40 px-3 font-medium underline-offset-4 hover:bg-amber-100"
+          >
+            {onlyReview
+              ? "Lihat semua transaksi"
+              : "Lihat transaksi perlu review"}
+          </Link>
+        </div>
+      ) : null}
 
       <div className="overflow-x-auto rounded-lg border bg-card">
         <table className="w-full text-sm">
@@ -50,31 +88,51 @@ export default async function SalesPage() {
             </tr>
           </thead>
           <tbody>
-            {data.rows.length === 0 ? (
+            {rows.length === 0 ? (
               <tr>
                 <td
                   colSpan={7}
                   className="text-muted-foreground p-3 text-center"
                 >
-                  Belum ada penjualan.
+                  {onlyReview
+                    ? "Tidak ada transaksi yang perlu review."
+                    : "Belum ada penjualan."}
                 </td>
               </tr>
             ) : (
-              data.rows.map((row) => (
+              rows.map((row) => (
                 <tr key={row.id} className="border-b last:border-0">
                   <td className="p-3 font-medium whitespace-nowrap">
-                    {row.invoiceNo}
+                    <span className="block">{row.invoiceNo}</span>
+                    {row.localInvoiceNo ? (
+                      <span className="text-muted-foreground block text-xs font-normal">
+                        offline {row.localInvoiceNo}
+                      </span>
+                    ) : null}
                   </td>
                   <td className="p-3 whitespace-nowrap">
                     {formatDateTime(row.soldAt)}
                   </td>
                   <td className="p-3">{row.outletName}</td>
-                  <td className="p-3">{row.customerName ?? "—"}</td>
+                  <td className="p-3">{row.customerName ?? "-"}</td>
                   <td className="p-3 whitespace-nowrap">
                     {formatRupiah(row.total)}
                   </td>
                   <td className="p-3">
-                    {statusLabel[row.status] ?? row.status}
+                    <span
+                      className={
+                        row.status === "needs_review"
+                          ? "font-bold text-amber-700"
+                          : undefined
+                      }
+                    >
+                      {statusLabel[row.status] ?? row.status}
+                    </span>
+                    {row.needsReviewReason ? (
+                      <span className="text-muted-foreground block text-xs">
+                        {row.needsReviewReason}
+                      </span>
+                    ) : null}
                   </td>
                   <td className="p-3">
                     <div className="flex gap-3">

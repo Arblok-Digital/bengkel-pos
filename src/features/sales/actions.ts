@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/types";
 import { formatRupiah } from "@/lib/money";
-import { receiptSettingsSchema, saleReturnSchema, voidSaleSchema } from "./schema";
+import { receiptSettingsSchema, resolveSaleReviewSchema, saleReturnSchema, voidSaleSchema } from "./schema";
 
 export type ReceiptSettingsState = {
   error: string | null;
@@ -109,6 +109,8 @@ function knownSaleError(message: string): boolean {
     "melebihi",
     "void",
     "client_uuid",
+    "stok",
+    "review",
   ].some((fragment) => message.toLowerCase().includes(fragment));
 }
 
@@ -212,5 +214,53 @@ export async function returnSaleAction(
   return {
     error: null,
     success: `Retur tersimpan: ${formatRupiah(Number(row.total ?? 0))}.`,
+  };
+}
+
+export async function resolveSaleReviewAction(
+  _prev: SaleMutationState,
+  formData: FormData
+): Promise<SaleMutationState> {
+  const parsed = resolveSaleReviewSchema.safeParse({
+    saleId: str(formData, "saleId"),
+    action: str(formData, "action"),
+    reason: str(formData, "reason") || undefined,
+  });
+
+  if (!parsed.success) {
+    return {
+      error: parsed.error.issues[0]?.message ?? "Isian review tidak valid.",
+      success: null,
+    };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("resolve_sale_review", {
+    p_sale_id: parsed.data.saleId,
+    p_action: parsed.data.action,
+    p_reason: parsed.data.reason ?? null,
+  });
+
+  if (error) {
+    return {
+      error: knownSaleError(error.message)
+        ? error.message
+        : "Gagal menyelesaikan transaksi review.",
+      success: null,
+    };
+  }
+
+  const row = (data ?? {}) as Record<string, Json | undefined>;
+  revalidatePath("/penjualan");
+  revalidatePath(`/penjualan/${parsed.data.saleId}`);
+  revalidatePath("/stok");
+  revalidatePath("/kasir");
+
+  return {
+    error: null,
+    success:
+      parsed.data.action === "accept"
+        ? `Transaksi ${String(row.invoice_no ?? "")} disetujui dan stok dipotong.`
+        : `Transaksi ${String(row.invoice_no ?? "")} dibatalkan.`,
   };
 }
