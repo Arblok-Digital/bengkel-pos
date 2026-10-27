@@ -3,6 +3,22 @@
 Aplikasi POS multi-tenant, offline-capable, Bahasa Indonesia.
 Desain lengkap: `ARCHITECTURE.md` — aturan kerja: `AGENTS.md`.
 
+## Dokumentasi
+
+| Berkas | Isi |
+| --- | --- |
+| `ARCHITECTURE.md` | Desain lengkap: stack, model data, pola RLS, alur transaksi, rencana fase T0.1–T11.5. |
+| `AGENTS.md` | Aturan kerja agent: uang integer, stok lewat `stock_movements`, RPC atomik, RLS per perintah. |
+| [`docs/database.md`](docs/database.md) | Arsitektur database: ERD, daftar tabel + kolom, policy RLS, daftar RPC. |
+| [`docs/database-schema.sql`](docs/database-schema.sql) | Dump skema `public` (`pg_dump --schema-only`) — bisa dibaca tanpa menyalakan Supabase. |
+| `supabase/migrations/` | Sumber kebenaran skema, berurutan dan tidak boleh diedit. |
+| `supabase/tests/` | Tes pgTAP untuk RLS, trigger, dan RPC. |
+| `e2e/` | Tes Playwright alur nyata (kasir, shift, pembayaran, struk, PWA). |
+
+Data demo (khusus lokal, dari `supabase/seed.sql`): tenant **Bengkel Maju Jaya**,
+outlet **Outlet Utama**, akun `admin@bengkel.test` / `bengkel123`.
+Jangan dipakai di produksi.
+
 ## Prasyarat
 
 - Node.js (npm) di Windows — semua `npm run dev`, test, build, install **hanya di Windows**.
