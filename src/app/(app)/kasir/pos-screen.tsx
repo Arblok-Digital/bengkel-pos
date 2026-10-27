@@ -186,10 +186,14 @@ export function PosScreen({ data }: { data: PosData }) {
     .reduce((sum, row) => sum + amountOf(row), 0);
   const remaining = Math.max(0, total - cashPaid);
   const change = Math.max(0, cashPaid - total);
+  const creditLimitExceeded = Boolean(
+    customer && customer.creditLimit > 0 && remaining > customer.creditLimit
+  );
   const canPay =
     lines.length > 0 &&
     total > 0 &&
     !saving &&
+    !creditLimitExceeded &&
     !lines.some((line) => line.pricing) &&
     (cashPaid >= total || customerId !== "");
 
@@ -519,6 +523,12 @@ export function PosScreen({ data }: { data: PosData }) {
     if (cashPaid < total && !customerId) {
       setCartError(
         "Pembayaran kurang. Pilih pelanggan dulu untuk sisa kredit/tempo."
+      );
+      return;
+    }
+    if (creditLimitExceeded) {
+      setCartError(
+        `Sisa tagihan kredit (${formatRupiah(remaining)}) melebihi limit kredit ${customer?.name} (${formatRupiah(customer?.creditLimit ?? 0)}).`
       );
       return;
     }
@@ -1086,9 +1096,19 @@ export function PosScreen({ data }: { data: PosData }) {
               </div>
 
               {customer && customer.creditLimit > 0 ? (
-                <p className="text-muted-foreground text-xs">
+                <p
+                  className={`text-xs ${
+                    creditLimitExceeded
+                      ? "font-semibold text-destructive"
+                      : "text-muted-foreground"
+                  }`}
+                  role={creditLimitExceeded ? "alert" : undefined}
+                >
                   Limit kredit {customer.name}:{" "}
                   {formatRupiah(customer.creditLimit)}
+                  {creditLimitExceeded
+                    ? ` (sisa tempo ${formatRupiah(remaining)} melebihi limit)`
+                    : ""}
                 </p>
               ) : null}
 
@@ -1185,10 +1205,21 @@ export function PosScreen({ data }: { data: PosData }) {
                   <dt>Dibayar</dt>
                   <dd>{formatRupiah(state.success.paidAmount)}</dd>
                 </div>
-                <div className="flex justify-between font-semibold">
-                  <dt>Kembalian</dt>
-                  <dd>{formatRupiah(state.success.changeAmount)}</dd>
-                </div>
+                {state.success.paidAmount < state.success.total ? (
+                  <div className="flex justify-between font-semibold text-amber-900">
+                    <dt>Sisa (piutang)</dt>
+                    <dd>
+                      {formatRupiah(
+                        state.success.total - state.success.paidAmount
+                      )}
+                    </dd>
+                  </div>
+                ) : (
+                  <div className="flex justify-between font-semibold">
+                    <dt>Kembalian</dt>
+                    <dd>{formatRupiah(state.success.changeAmount)}</dd>
+                  </div>
+                )}
               </dl>
               <Link
                 href={`/struk/${state.success.saleId}`}
