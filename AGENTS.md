@@ -97,15 +97,27 @@ Kalau salah satu perintah belum ada di `package.json`, tambahkan sesuai nama di 
 
 ## 6. Definisi Selesai (Wajib Sebelum Bilang "Selesai")
 
-Sebuah task **belum selesai** sampai semua ini benar:
+Sebuah task **belum selesai** sampai **semua** poin ini benar dan dibuktikan dengan output mentah. Tidak ada pengecualian "karena waktunya mepet".
 
 1. Semua poin "Selesai bila" task tersebut di `ARCHITECTURE.md` terpenuhi.
-2. `npm run lint && npm run typecheck && npm run test` hijau.
-3. Jika menyentuh DB: `supabase db reset && supabase test db` hijau, dan ada tes SQL untuk RPC/RLS yang baru.
-4. Jika menyentuh layar kasir, shift, penjualan, piutang, work order, atau struk: jalankan E2E untuk alur terkait sesuai **Bagian 11** dan tempel output mentahnya.
-5. Perubahan sudah di-commit.
+2. `npm run lint && npm run typecheck && npm run test` → exit 0, tanpa error.
+3. Jika menyentuh DB: `npm run db:reset` lalu `supabase test db` → `Result: PASS`, dan ada tes SQL baru untuk RPC/RLS yang baru.
+4. E2E sesuai **Bagian 11**: spec area terkait lulus **sendirian**, lalu **suite penuh `npm run e2e`** di DB yang baru di-reset → `0 failed`, `0 flaky`. "Spec terkait hijau" saja **bukan** definisi selesai.
+5. Audit diff (Bagian 11.8): hanya file yang relevan, tidak ada `.env*`, secret, `console.log` sisa debug, `test.skip`, `test.only`, atau file `test-results/`.
+6. Perubahan sudah di-commit (dan di-push bila diminta).
+7. Laporan memakai format Bagian 7 dan menempel output **asli** dari perintah yang benar-benar dijalankan.
 
-**Tempel output mentah** dari perintah verifikasi di laporan akhir. Dilarang menulis "sudah dites" atau "berhasil" tanpa output. Kalau sebuah tes dilewati atau gagal, katakan terang-terangan.
+**Larangan klaim (laporan langsung dianggap tidak sah):**
+- "sudah dites", "harusnya jalan", "mestinya aman", "kemungkinan beres", "di lokal aman".
+- Hanya menempel exit code tanpa output perintah.
+- Menempel output dari sesi/commit lain, atau output yang diedit.
+- Mengklaim suite penuh hijau padahal hanya menjalankan sebagian spec.
+- Mengklaim "gagal bawaan" tanpa bukti tiga poin di Bagian 11.3.
+- Menganggap `flaky` sebagai lulus; `flaky` = **gagal**.
+
+Kalau satu poin saja gagal, status task **wajib** `sebagian` atau `terblokir` — bukan `selesai`.
+
+Pengecualian: perubahan **murni dokumentasi** (mis. `AGENTS.md`, `docs/*.md`) tidak wajib langkah B–F, tetapi tetap wajib audit diff dan alasannya disebut di laporan. Kalau dokumen itu mengubah perilaku agent (seperti file ini), perlakukan sebagai perubahan penting: baca ulang Bagian 11 setelah mengeditnya.
 
 ---
 
@@ -120,8 +132,24 @@ FILE BERUBAH:
 
 MIGRASI BARU: <nama file atau "tidak ada">
 
-VERIFIKASI (output mentah):
-<lint/typecheck/test/db test/e2e>
+VERIFIKASI (output mentah, sesuai urutan Bagian 11.1):
+LINT:
+<output>
+TYPECHECK:
+<output>
+VITEST:
+<output>
+DB RESET:
+<output>
+PGTAP:
+<output>
+E2E TERKAIT:
+<output>
+E2E PENUH:
+<output>
+
+AUDIT DIFF:
+- <hasil git status/diff: bersih atau file di luar scope yang dikeluarkan>
 
 CATATAN DI LUAR SCOPE:
 - <temuan yang tidak diperbaiki>
@@ -129,6 +157,8 @@ CATATAN DI LUAR SCOPE:
 PERLU KEPUTUSAN:
 - <pertanyaan, atau "tidak ada">
 ```
+
+`STATUS: selesai` hanya sah bila checklist Bagian 11.7 lengkap. Kalau ada satu kegagalan, tulis `sebagian`/`terblokir` beserta output gagalnya — jangan memilih `selesai` lalu menaruh kegagalan di catatan.
 
 ---
 
@@ -167,6 +197,10 @@ Jika konteks sudah panjang dan kamu mulai lupa keputusan awal, ringkas kondisi s
 - [ ] Stok menipis ditandai merah+tebal di daftar yang kamu ubah?
 - [ ] Teks UI baru sudah Bahasa Indonesia dan format rupiah benar?
 - [ ] Status koneksi/antrean sinkron tidak rusak oleh perubahan kamu (setelah Fase 10)?
+- [ ] Checklist verifikasi Bagian 11.7 lengkap dan output asli ditempel?
+- [ ] `npm run e2e` penuh `0 failed`, `0 flaky` (bukan hanya spec terkait)?
+- [ ] Tidak ada assertion yang diperlonggar, tes dihapus/di-skip, atau `test.only`?
+- [ ] Diff sudah diaudit: tidak ada secret, `console.log`, atau file di luar scope?
 
 ## 11. Aturan Wajib Tes E2E
 
@@ -176,21 +210,38 @@ Bagian ini mengikat. Klaim "E2E hijau" tanpa mengikuti urutan di bawah dianggap 
 
 ### 11.1 Urutan wajib (tidak boleh diacak)
 
-E2E selalu dijalankan **di atas DB yang baru di-reset**, karena spec mengandalkan seed dan data sisa spec lain merusak tes SQL berikutnya.
+E2E selalu dijalankan **di atas DB yang baru di-reset**. Suite penuh **wajib** — bukan hanya spec area terkait — karena data/state dari spec lain bisa merusak alur yang kelihatan tidak berhubungan.
 
 ```bash
-# 1. reset DB (wrapper WSL; versi CLI dibaca dari package.json)
+# A. Gerbang cepat
+npm run lint
+npm run typecheck
+npm run test
+
+# B. DB bersih
 npm run db:reset
-# 2. tes pgTAP (belum ada skrip npm; jalankan CLI dari WSL sesuai bagian Isolasi)
+
+# C. Tes SQL
 wsl bash -lc "cd /tmp && npx --yes supabase@2.122.0 --workdir /mnt/c/Users/ARBLOK/projects/bengkel test db"
-# 3. baru E2E (dev server menyala otomatis lewat playwright.config webServer)
-npx playwright test e2e/<spec-terkait>.spec.ts
+
+# D. Spec area terkait, sendirian (bukti spec mandiri)
+#    Bisa lebih dari satu file, mis. e2e/stock.spec.ts e2e/low-stock.spec.ts
+npx playwright test e2e/<spec-area>.spec.ts
+
+# E. Reset lagi — langkah D mengubah data
+npm run db:reset
+
+# F. Suite penuh (WAJIB, ini bukti akhir)
+npm run e2e
 ```
 
 - Versi Supabase CLI **wajib sama** dengan yang dikunci di `package.json` (saat ini `^2.122.0`). Jangan mengarang versi lain.
-- `npx playwright test <spec>` untuk alur terkait **wajib**, `npm run e2e` penuh hanya pelengkap.
-- Jangan menjalankan spec terkait berkali-kali sampai kebetulan lulus. Satu kali di DB bersih = bukti. Retry bawaan config (`retries: 1`) **bukan** alasan untuk menganggap lulus; kalau lulus hanya di percobaan kedua, itu **gagal** dan wajib dilaporkan.
-- Jangan menyalakan `--repeat-each`, `--workers > 1`, atau `--retries 0/5` untuk mengubah hasil. Konfigurasi hanya boleh diubah kalau task-nya memang tentang konfigurasi Playwright.
+- Sebelum langkah B/E, tampilkan perintah reset dan pastikan `project_id = "bengkel-pos"` serta port di `supabase/config.toml` masih milik project ini (lihat bagian Isolasi).
+- Langkah A–F semuanya wajib untuk task yang menyentuh kode/alur. Melewati salah satu = verifikasi tidak sah.
+- Urutan tidak boleh diacak: menjalankan E2E sebelum reset, atau suite penuh sebelum spec terkait, membuat hasilnya tidak bisa dipercaya.
+- Jangan menjalankan spec berkali-kali sampai kebetulan lulus. Satu kali di DB bersih = bukti. Retry bawaan (`retries: 1`) **bukan** alasan lulus; kalau lulus hanya di percobaan kedua, itu **gagal** dan wajib dilaporkan.
+- Jangan menyalakan `--repeat-each`, `--workers > 1`, `--retries`, `test.describe.configure({ retries })`, atau mengubah konfigurasi Playwright untuk mengubah hasil. Konfigurasi hanya boleh diubah kalau task-nya memang tentang konfigurasi Playwright, dan itu wajib dijelaskan.
+- Suite penuh harus dijalankan **setelah** perubahan kode terakhir. Kalau setelah suite penuh kamu mengubah kode lagi, ulangi dari langkah B.
 
 **Peta area → spec (wajib dipakai, jangan menebak):**
 
@@ -213,15 +264,42 @@ npx playwright test e2e/<spec-terkait>.spec.ts
 
 ### 11.2 Bukti yang wajib ditempel
 
-Di laporan akhir tempel output mentah, minimal:
+Tempel output **asli** di laporan, dalam blok kode, untuk **setiap** langkah A–F. Bentuk minimal yang diterima:
 
 ```
-Running 1 test using 1 worker
-  ✓  1 e2e/<spec>.spec.ts:<baris>:<kolom> › <nama tes> (<durasi>)
-  1 passed (<durasi total>)
+$ npm run lint
+(exit 0, tanpa output error)
+
+$ npm run typecheck
+(exit 0, tanpa output error)
+
+$ npm run test
+Test Files  10 passed (10)
+     Tests  94 passed (94)
+
+$ npm run db:reset
+database: reset bengkel-pos (migrasi + seed) ...
+database: reset selesai
+
+$ npx playwright test e2e/<spec-area>.spec.ts
+1 passed (17.9s)
+
+$ npm run e2e
+22 passed (2.9m)
 ```
 
-Yang **tidak** dihitung bukti: "sudah dites", "hijau", screenshot tanpa nama spec, ringkasan buatan sendiri, atau output dari sesi/commit lain. Kalau test di-skip (`-`), sebutkan dan jelaskan alasannya.
+Aturan penempelan:
+- Sertakan baris ringkasan **dan** nama spec yang relevan. Kalau output sangat panjang, potong bagian tengah, jangan potong baris ringkasan.
+- Angka harus **aktual** dari run itu, bukan template. Kalau jumlah tes berubah karena kamu menambah spec, tulis jumlah barunya dan jelaskan.
+- `npm run e2e` wajib menunjukkan `0 failed` dan `0 flaky`. Kalau ada baris `x`, `retry #1`, atau `flaky`, itu **bukan** bukti hijau.
+- Kalau ada test di-skip (`-`), sebutkan nama test dan alasannya. Skip tanpa alasan = verifikasi tidak sah.
+
+Yang **tidak** dihitung bukti:
+- "sudah dites", "hijau", "lulus semua" tanpa blok output.
+- Screenshot, video, atau trace tanpa perintah dan output teks.
+- Ringkasan buatan sendiri ("21/22 lulus, sisanya aman").
+- Output dari sesi, commit, atau mesin lain.
+- Output yang diedit/diringkas sampai baris kegagalan hilang.
 
 ### 11.3 Cara membuktikan kegagalan itu bawaan (bukan akibat perubahan kamu)
 
@@ -233,13 +311,32 @@ Dilarang menulis "gagal bawaan" tanpa bukti. Untuk setiap kegagalan yang kamu kl
 
 Kalau ketiganya tidak bisa dipenuhi, perlakukan sebagai **kegagalan task kamu**: perbaiki atau nyatakan task `terblokir`, jangan `selesai`.
 
+Klasifikasi wajib saat ada kegagalan:
+
+| Kondisi | Artinya | Yang wajib dilakukan |
+| --- | --- | --- |
+| Spec area gagal | Regresi task | Perbaiki kode/spec, ulangi A–F |
+| Suite penuh gagal, spec area hijau | Interaksi state / regresi area lain | Cari spec yang saling merusak, perbaiki, jangan diabaikan |
+| Lulus hanya di retry (`flaky`) | Gagal | Perbaiki akar masalah (race/async), bukan menambah retry |
+| Gagal di DB bersih, lulus di DB kotor | Spec tidak mandiri | Perbaiki setup/cleanup spec |
+| Gagal + bukti 11.3 lengkap | Di luar scope | Laporkan `sebagian`/`terblokir`, jangan `selesai` |
+
+"Suite penuh merah tapi spec saya hijau" **bukan** alasan untuk selesai. Itu justru tanda ada regresi yang belum ketemu.
+
 ### 11.4 Larangan saat tes merah
 
-- Dilarang menghapus, melewati (`test.skip`, `test.fixme`), atau mengomentari tes yang gagal supaya hijau.
-- Dilarang memperlonggar assertion (mis. `toHaveURL("/")` → `toHaveURL(/.*/)`, menambah timeout besar, `expect(...).toBeTruthy()` menggantikan cek nilai).
-- Dilarang mengubah data seed produksi/seed utama hanya supaya tes lulus, kecuali seed itu memang salah dan perbaikannya masuk task yang sama + dijelaskan.
-- Dilarang menghapus langkah di dalam spec (mis. melewati `ensureShift`) untuk menghindari error.
-- Kalau tes gagal karena bug aplikasi: perbaiki aplikasinya, bukan tesnya. Kalau tes gagal karena ekspektasi tes yang sudah usang: perbaiki tesnya sambil menjelaskan di laporan mengapa ekspektasi lama salah.
+- Dilarang menghapus, melewati (`test.skip`, `test.fixme`), mengganti nama, atau mengomentari tes yang gagal supaya hijau.
+- Dilarang memakai `test.only` / `describe.only` untuk "mempersempit" suite, lalu mengklaim suite penuh hijau.
+- Dilarang memperlonggar assertion (mis. `toHaveURL("/")` → `toHaveURL(/.*/)`, `expect(...).toBeTruthy()` menggantikan cek nilai, menghapus cek angka/status).
+- Dilarang menaikkan timeout sebagai solusi utama. Timeout >10 detik harus disertai alasan teknis di komentar (mis. menunggu server action/pricing), bukan untuk menutupi race.
+- Dilarang menambah `waitForTimeout` (sleep) sebagai pengganti web-first assertion, kecuali benar-benar tidak ada sinyal UI dan dijelaskan di komentar + laporan.
+- Dilarang mengubah seed utama, data demo, atau konstanta bisnis hanya supaya tes lulus. Kalau seed memang salah, perbaiki di task yang sama dan jelaskan sebabnya.
+- Dilarang menghapus langkah di dalam spec (mis. melewati `ensureShift`, `closeShift`, pembuatan data) untuk menghindari error.
+- Dilarang mengubah `playwright.config.ts` (workers, retries, timeout global, testDir) untuk mengakali hasil, kecuali task-nya memang tentang konfigurasi.
+- Dilarang meng-commit artefak `test-results/`, `playwright-report/`, trace, atau video.
+- Kalau tes gagal karena bug aplikasi: perbaiki aplikasinya, bukan tesnya. Kalau ekspektasi tes yang usang: perbaiki tesnya sambil menjelaskan di laporan mengapa ekspektasi lama salah (bukan sekadar "disesuaikan").
+
+Pelanggaran salah satu poin di atas = verifikasi **tidak sah**, walaupun semua tes kebetulan hijau.
 
 ### 11.5 Aturan menulis spec baru / mengubah spec
 
@@ -247,8 +344,13 @@ Kalau ketiganya tidak bisa dipenuhi, perlakukan sebagai **kegagalan task kamu**:
 - Jangan assert `toHaveURL("/")`: `/` selalu redirect ke `/(bengkel|toko)`. Pakai pola regex.
 - Data uji wajib unik per run (`Date.now()` / `crypto.randomUUID()` di luar render React) supaya tidak bentrok dengan sisa run sebelumnya.
 - Satu spec harus bisa lulus **sendirian** di DB bersih. Jangan bergantung pada spec lain yang jalan lebih dulu, pada shift yang kebetulan masih terbuka, atau pada stok yang kebetulan tersisa.
-- Bersihkan state yang kamu buka sendiri (`closeShift` bila spec membuka shift) agar suite penuh tidak saling merusak.
+- Bersihkan state yang kamu buka sendiri (`closeShift` bila spec membuka shift) agar suite penuh tidak saling merusak. Kalau assert bisa gagal, cleanup tetap harus jalan (`try/finally`).
 - Untuk alur yang menyentuh stok/uang, assert **nilai** yang terlihat user (total rupiah, status, sisa stok), bukan sekadar "halaman terbuka".
+- Gunakan web-first assertion (`await expect(locator)...`), bukan `waitForTimeout`. Kalau menunggu proses server (mis. pricing), tunggu **efeknya** (tombol aktif, teks berubah), bukan durasi.
+- Locator harus spesifik. Kalau nama muncul di nav dan kartu dashboard, pakai `exact: true` atau scope ke `getByRole("navigation")`.
+- Satu spec = satu alur utama. Jangan menumpuk 5 skenario berbeda sampai kegagalan sulit dilacak.
+- Kalau area baru belum punya spec, **wajib** buat spec untuk alur utamanya di task yang sama, lalu jalankan sesuai 11.1.
+- Jangan menyalin helper ke dalam spec. Tambahkan helper bersama di `e2e/helpers.ts` bila dipakai lebih dari satu spec.
 
 ### 11.6 Baseline E2E (diperbarui 28 Okt 2026)
 
@@ -265,15 +367,77 @@ Spec yang dulu basi sudah diperbaiki (branch `chore/T-e2e-baseline`):
 
 Setelah perapian lanjutan, **semua spec login lewat `helpers.login(page)`** dan tidak ada lagi assert `toHaveURL("/")` setelah login. `pwa.spec.ts` hanya membuka `/login` untuk membaca manifest, itu bukan login. Jangan mengembalikan pola assert `"/"`.
 
-### 11.7 Ringkasan yang bisa dicek mesin
+### 11.7 Checklist verifikasi (salin ke laporan)
 
-Sebelum commit, jawab di laporan:
+Sebelum menulis `STATUS: selesai`, jawab semua dengan bukti:
 
-- [ ] `npm run db:reset` dijalankan setelah perubahan migrasi terakhir?
-- [ ] `supabase test db` hijau (tempel `Files=..., Tests=..., Result: PASS`)?
-- [ ] `npx playwright test e2e/<spec terkait>` hijau di DB bersih, tempel outputnya?
-- [ ] Semua kegagalan lain yang terlihat sudah dibuktikan bawaan (11.3) atau dilaporkan `terblokir`?
-- [ ] Tidak ada assertion yang diperlonggar, tes dihapus, atau `test.skip` baru?
+- [ ] A. `npm run lint` exit 0 (tempel output).
+- [ ] A. `npm run typecheck` exit 0 (tempel output).
+- [ ] A. `npm run test` hijau (tempel `Test Files ... / Tests ...`).
+- [ ] B. `npm run db:reset` dijalankan setelah perubahan migrasi/kode terakhir (tempel output).
+- [ ] C. `supabase test db` → `Result: PASS` (tempel `Files=..., Tests=...`).
+- [ ] D. Spec area terkait lulus **sendirian** di DB bersih (tempel output + nama spec).
+- [ ] E. DB di-reset lagi sebelum suite penuh (tempel output).
+- [ ] F. `npm run e2e` → `0 failed`, `0 flaky` (tempel output lengkap/ringkasan sah).
+- [ ] Semua kegagalan yang terlihat sudah diperbaiki, atau dibuktikan bawaan dengan 3 bukti 11.3.
+- [ ] Tidak ada assertion yang diperlonggar, tes dihapus/di-skip, `test.only`, atau config Playwright yang diakali.
+- [ ] Diff hanya berisi file yang relevan; tidak ada secret, `.env*`, `console.log` debug, atau artefak tes.
+- [ ] Migrasi baru bernomor urut dan `src/lib/supabase/types.ts` sudah di-generate ulang bila skema berubah.
+- [ ] Laporan memakai format Bagian 7 dan menempel output asli.
+
+Template blok verifikasi di laporan:
+
+```
+VERIFIKASI (output mentah):
+
+LINT:
+<output>
+
+TYPECHECK:
+<output>
+
+VITEST:
+<output>
+
+DB RESET:
+<output>
+
+PGTAP:
+<output>
+
+E2E TERKAIT:
+<output>
+
+E2E PENUH:
+<output>
+```
+
+### 11.8 Audit sebelum commit (wajib)
+
+Jalankan dan periksa semuanya:
+
+```bash
+git status --short          # hanya file yang kamu maksud
+git diff --stat             # tidak ada file tak terduga
+git diff                    # baca perubahan sendiri, jangan asal add -A
+git diff --cached           # periksa yang akan di-commit
+```
+
+Yang wajib dipastikan:
+- Tidak ada `.env*`, key, token, service role, atau kredensial di diff.
+- Tidak ada `console.log`, `debugger`, komentar kode mati, atau `TODO` sementara.
+- Tidak ada `test.skip`, `test.only`, `describe.only`, atau perubahan `playwright.config.ts` yang tidak dijelaskan.
+- Tidak ada `test-results/`, `playwright-report/`, `trace.zip`, atau video ikut ter-stage.
+- Tidak ada file di luar scope task (mis. `tmp/`, dokumen lain, refactor tak diminta). Kalau ada, keluarkan dari commit dan catat di laporan.
+- Kalau skema berubah: migrasi baru + tes pgTAP + `src/lib/supabase/types.ts` hasil generate ikut di commit yang sama/berurutan.
+- Kalau kode berubah setelah verifikasi terakhir: **ulangi langkah B–F**. Commit setelah verifikasi tidak otomatis membatalkan bukti hanya jika isi kode identik.
+
+### 11.9 Konsekuensi
+
+- Verifikasi yang tidak lengkap atau klaim tanpa output membuat laporan **tidak sah**; task dianggap belum selesai dan harus dibuka lagi.
+- `flaky`, `skipped`, `test.only`, atau suite penuh merah **tidak boleh** dilaporkan sebagai `selesai`.
+- Kalau ragu antara "mungkin aman" dan "sudah dijalankan": jalankan. Beberapa menit untuk suite penuh lebih murah daripada regresi yang lolos ke `main`.
+- Aturan di Bagian 11 tidak boleh dilemahkan, diringkas, atau dilewati oleh agent mana pun. Perubahan aturan ini harus disetujui Ardi.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
