@@ -42,7 +42,7 @@ export default async function VehiclesPage() {
       ) : (
         <>
           {data.canWrite ? (
-            <VehicleForm customers={customers} />
+            <VehicleForm tenantId={data.tenantId} customers={customers} />
           ) : (
             <p className="text-muted-foreground text-sm">
               Hanya pemilik/admin yang dapat mengubah kendaraan.

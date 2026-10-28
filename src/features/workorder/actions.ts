@@ -44,11 +44,12 @@ function str(formData: FormData, key: string): string {
   return typeof value === "string" ? value : "";
 }
 
-function mapError(code: string | undefined): string {
+function mapError(code: string | undefined, message?: string): string {
   if (code === "23503") return "Data referensi tidak valid.";
   if (code === "23505") return "Nomor work order sudah terdaftar.";
   if (code === "23514") return "Nilai work order tidak valid.";
   if (code === "42501") return "Tidak berhak mengubah work order.";
+  if (code === "P0001" && message) return message;
   if (code === "P0001") return "Validasi work order gagal.";
   return "Gagal menyimpan work order.";
 }
@@ -79,23 +80,36 @@ export async function createWorkOrderAction(
   if (!ctx.ok) return { error: ctx.error };
 
   const itemsRaw = formData.getAll("items");
-  const items = itemsRaw.map((v) => {
+  const items: unknown[] = [];
+  for (const raw of itemsRaw) {
+    if (typeof raw !== "string" || raw.trim() === "") continue;
     try {
-      return JSON.parse(typeof v === "string" ? v : "{}");
+      const parsedItem: unknown = JSON.parse(raw);
+      if (Array.isArray(parsedItem)) {
+        items.push(...parsedItem);
+      } else {
+        items.push(parsedItem);
+      }
     } catch {
-      return {};
+      // Baris item yang tidak bisa dibaca akan ditolak oleh validasi Zod.
     }
-  });
+  }
 
-  const itemsParsed = workOrderItemSchema
-    .array()
-    .safeParse(items);
+  const itemsParsed = workOrderItemSchema.array().safeParse(items);
 
   if (!itemsParsed.success) {
     return {
       error: itemsParsed.error.issues[0]?.message ?? "Item work order tidak valid.",
     };
   }
+
+  const payload = itemsParsed.data.map((it) => ({
+    product_id: it.productId,
+    unit_id: it.unitId,
+    qty: it.qty,
+    unit_price: it.unitPrice,
+    note: it.note ?? null,
+  }));
 
   const { error } = await ctx.supabase.rpc("create_work_order", {
     p_tenant_id: parsed.data.tenantId,
@@ -107,22 +121,22 @@ export async function createWorkOrderAction(
     p_diagnosis: parsed.data.diagnosis ?? null,
     p_mechanic_id: parsed.data.mechanicId ?? null,
     p_estimate_total: parsed.data.estimateTotal ?? 0,
-    p_items: JSON.stringify(
-      itemsParsed.data.map((it) => ({
-        product_id: it.productId,
-        unit_id: it.unitId,
-        qty: it.qty,
-        unit_price: it.unitPrice,
-        note: it.note ?? null,
-      }))
-    ),
+    p_items: payload,
   });
 
-  if (error) return { error: mapError((error as { code?: string })?.code) };
+  if (error)
+    return {
+      error: mapError(
+        (error as { code?: string })?.code,
+        (error as { message?: string })?.message
+      ),
+    };
 
   revalidatePath("/bengkel/work-order");
   redirect("/bengkel/work-order");
-}export async function updateWorkOrderStatusAction(
+}
+
+export async function updateWorkOrderStatusAction(
   _prev: WorkOrderActionState,
   formData: FormData
 ): Promise<WorkOrderActionState> {
@@ -160,7 +174,7 @@ export async function createWorkOrderAction(
     p_status: parsed.data.status,
   });
 
-  if (error) return { error: mapError((error as { code?: string })?.code) };
+  if (error) return { error: mapError((error as { code?: string; message?: string })?.code, (error as { message?: string })?.message) };
 
   revalidatePath("/bengkel/work-order");
   redirect("/bengkel/work-order");

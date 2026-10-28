@@ -2,8 +2,14 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getWorkOrdersPage } from "@/features/workorder/queries";
-import { getCustomerOptions } from "@/features/workorder/queries";
+import {
+  getCustomerOptions,
+  getMechanicOptions,
+  getProductFormOptions,
+  getVehicleFormOptions,
+} from "@/features/workorder/queries";
 import { WorkOrderForm } from "./work-order-form";
+import { formatRupiah } from "@/lib/money";
 
 export default async function WorkOrderPage() {
   const data = await getWorkOrdersPage();
@@ -12,12 +18,17 @@ export default async function WorkOrderPage() {
     redirect("/onboarding");
   }
 
-  const outletId = data.workOrders[0]?.outletId || "";
+  const canCreate =
+    data.canWrite && data.businessType !== "toko_bangunan" && data.outletId !== "";
 
-  const customers =
-    data.businessType !== "toko_bangunan" && data.canWrite
-      ? await getCustomerOptions()
-      : [];
+  const [customers, vehicles, products, mechanics] = canCreate
+    ? await Promise.all([
+        getCustomerOptions(),
+        getVehicleFormOptions(),
+        getProductFormOptions(),
+        getMechanicOptions(data.tenantId),
+      ])
+    : [[], [], [], []];
 
   const STATUS_LABEL: Record<string, string> = {
     antri: "Antrian",
@@ -53,12 +64,19 @@ export default async function WorkOrderPage() {
         </p>
       ) : (
         <>
-          {data.canWrite ? (
+          {canCreate ? (
             <WorkOrderForm
               tenantId={data.tenantId}
-              outletId={outletId}
+              outletId={data.outletId}
               customers={customers}
+              vehicles={vehicles}
+              products={products}
+              mechanics={mechanics}
             />
+          ) : data.canWrite ? (
+            <p className="text-muted-foreground text-sm">
+              Outlet belum tersedia. Lengkapi pengaturan usaha terlebih dahulu.
+            </p>
           ) : (
             <p className="text-muted-foreground text-sm">
               Hanya pemilik/admin/mekanik yang dapat membuat work order.
@@ -116,7 +134,7 @@ export default async function WorkOrderPage() {
                         </span>
                       </td>
                       <td className="p-3 text-right font-mono">
-                        Rp {wo.estimateTotal.toLocaleString("id-ID")}
+                        {formatRupiah(wo.estimateTotal)}
                       </td>
                       <td className="p-3 text-center">
                         <Link

@@ -2,8 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getWorkOrderDetail } from "@/features/workorder/queries";
-import { updateWorkOrderStatusAction } from "@/features/workorder/actions";
-import { Button } from "@/components/ui/button";
+import { formatRupiah } from "@/lib/money";
+import { WorkOrderStatusForm } from "./work-order-status-form";
 
 const STATUS_LABEL: Record<string, string> = {
   antri: "Antrian",
@@ -39,13 +39,6 @@ export default async function WorkOrderDetailPage({
 
   const canTransition =
     workOrder.status !== "ditagih" && workOrder.status !== "dibatalkan";
-
-  const nextStatus: Record<string, string> = {
-    antri: "dikerjakan",
-    dikerjakan: "selesai",
-    menunggu_part: "dikerjakan",
-    selesai: "ditagih",
-  };
 
   return (
     <div className="mx-auto max-w-4xl flex flex-col gap-6">
@@ -110,7 +103,7 @@ export default async function WorkOrderDetailPage({
             Estimasi Total
           </span>
           <p className="text-sm font-mono font-medium">
-            Rp {workOrder.estimateTotal.toLocaleString("id-ID")}
+            {formatRupiah(workOrder.estimateTotal)}
           </p>
         </div>
       </div>
@@ -141,10 +134,10 @@ export default async function WorkOrderDetailPage({
                     <td className="p-3">{it.productName}</td>
                     <td className="p-3 text-right">{it.qty}</td>
                     <td className="p-3 text-right font-mono">
-                      Rp {it.unitPrice.toLocaleString("id-ID")}
+                      {formatRupiah(it.unitPrice)}
                     </td>
                     <td className="p-3 text-right font-mono font-medium">
-                      Rp {it.lineTotal.toLocaleString("id-ID")}
+                      {formatRupiah(it.lineTotal)}
                     </td>
                     <td className="p-3">{it.note ?? "—"}</td>
                   </tr>
@@ -155,7 +148,7 @@ export default async function WorkOrderDetailPage({
                   Total Item:
                 </td>
                 <td className="p-3 text-right font-mono">
-                  Rp {items.reduce((s, it) => s + it.lineTotal, 0).toLocaleString("id-ID")}
+                  {formatRupiah(items.reduce((s, it) => s + it.lineTotal, 0))}
                 </td>
                 <td className="p-3"></td>
               </tr>
@@ -170,38 +163,7 @@ export default async function WorkOrderDetailPage({
           <p className="text-sm text-muted-foreground mb-4">
             Pilih status berikutnya untuk work order ini.
           </p>
-          <form
-            action={async (formData: FormData) => {
-              await updateWorkOrderStatusAction({ error: null }, formData);
-            }}
-            className="flex gap-3"
-          >
-            <input type="hidden" name="woId" value={workOrder.id} />
-            <select
-              name="status"
-              className="h-9 rounded-md border border-input bg-background px-2"
-            >
-              {Object.entries(nextStatus).map(([from, to]) => {
-                if (from === workOrder.status) {
-                  return (
-                    <option key={to} value={to}>
-                      {STATUS_LABEL[to]}
-                    </option>
-                  );
-                }
-                return null;
-              })}
-            </select>
-            <Button type="submit" className="h-10">
-              Simpan Status
-            </Button>
-            <Link
-              href="/bengkel/work-order"
-              className="h-10 rounded-md border px-4 text-sm font-medium hover:bg-muted"
-            >
-              Batal
-            </Link>
-          </form>
+          <WorkOrderStatusForm woId={workOrder.id} status={workOrder.status} />
         </div>
       )}
     </div>

@@ -12,8 +12,10 @@ import type { CustomerOption } from "@/features/vehicles/queries";
 const initialState: VehicleActionState = { error: null };
 
 export function VehicleForm({
+  tenantId,
   customers,
 }: {
+  tenantId: string;
   customers: CustomerOption[];
 }) {
   const [state, formAction, pending] = useActionState(
@@ -23,6 +25,7 @@ export function VehicleForm({
 
   return (
     <form action={formAction} className="rounded-lg border bg-card p-4 space-y-4">
+      <input type="hidden" name="tenantId" value={tenantId} />
       <input type="hidden" name="active" value="on" />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

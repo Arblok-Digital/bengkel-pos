@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { mulQty } from "@/lib/money";
 
 export type WorkOrderRow = {
   id: string;
@@ -40,6 +41,7 @@ export type WorkOrdersPageData = {
   tenantName: string;
   businessType: string;
   canWrite: boolean;
+  outletId: string;
   workOrders: WorkOrderRow[];
 };
 
@@ -127,11 +129,20 @@ export async function getWorkOrdersPage(): Promise<WorkOrdersPageData | null> {
     .eq("tenant_id", membership.tenant_id)
     .order("queue_no", { ascending: true });
 
+  const { data: outlet } = await supabase
+    .from("outlets")
+    .select("id")
+    .eq("tenant_id", membership.tenant_id)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
   return {
     tenantId: membership.tenant_id,
     tenantName: tenant.name,
     businessType: tenant.business_type,
     canWrite: ["owner", "admin", "mekanik"].includes(membership.role),
+    outletId: outlet?.id ?? "",
     workOrders: (data ?? []).map((row) => {
       const r = row as unknown as {
         id: string;
@@ -192,7 +203,7 @@ export async function getWorkOrderDetail(
   const { data: items } = await supabase
     .from("work_order_items")
     .select(
-      "id, work_order_id, product_id, unit_id, qty, qty_base, unit_price, line_total, note"
+      "id, work_order_id, product_id, unit_id, qty, qty_base, unit_price, line_total, note, products(name), units(name)"
     )
     .eq("tenant_id", tenantId)
     .eq("work_order_id", woId)
@@ -250,14 +261,16 @@ export async function getWorkOrderDetail(
       unit_price: number;
       line_total: number;
       note: string | null;
+      products: { name: string } | null;
+      units: { name: string } | null;
     };
     return {
       id: i.id,
       workOrderId: i.work_order_id,
       productId: i.product_id,
-      productName: "—",
+      productName: i.products?.name ?? "—",
       unitId: i.unit_id,
-      unitName: "—",
+      unitName: i.units?.name ?? "—",
       qty: i.qty,
       qtyBase: i.qty_base,
       unitPrice: i.unit_price,
@@ -351,4 +364,153 @@ export async function getMechanicOptions(
     name: (row as unknown as { auth_users?: { email: string } | null })
       .auth_users?.email ?? "—",
   }));
+}
+
+export type VehicleFormOption = {
+  id: string;
+  customerId: string;
+  plateNo: string;
+  label: string;
+};
+
+export type ProductUnitOption = { id: string; name: string; price: number };
+
+export type ProductFormOption = {
+  id: string;
+  name: string;
+  kind: string;
+  sellPrice: number;
+  units: ProductUnitOption[];
+};
+
+type QueryContext = {
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  tenantId: string;
+};
+
+async function getQueryContext(): Promise<QueryContext | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: memberships } = await supabase
+    .from("memberships")
+    .select("tenant_id")
+    .eq("user_id", user.id)
+    .eq("active", true)
+    .limit(1);
+
+  if (!memberships || memberships.length === 0) return null;
+  return { supabase, tenantId: memberships[0].tenant_id };
+}
+
+export async function getVehicleFormOptions(): Promise<VehicleFormOption[]> {
+  const ctx = await getQueryContext();
+  if (!ctx) return [];
+
+  const { data } = await ctx.supabase
+    .from("vehicles")
+    .select("id, customer_id, plate_no, brand, model")
+    .eq("tenant_id", ctx.tenantId)
+    .eq("active", true)
+    .order("plate_no");
+
+  return (data ?? []).map((row) => {
+    const r = row as unknown as {
+      id: string;
+      customer_id: string;
+      plate_no: string;
+      brand: string | null;
+      model: string | null;
+    };
+    const detail = [r.brand, r.model].filter(Boolean).join(" ");
+    return {
+      id: r.id,
+      customerId: r.customer_id,
+      plateNo: r.plate_no,
+      label: detail ? `${r.plate_no} — ${detail}` : r.plate_no,
+    };
+  });
+}
+
+export async function getProductFormOptions(): Promise<ProductFormOption[]> {
+  const ctx = await getQueryContext();
+  if (!ctx) return [];
+
+  const [productsRes, productUnitsRes, unitsRes] = await Promise.all([
+    ctx.supabase
+      .from("products")
+      .select("id, name, kind, base_unit_id, sell_price")
+      .eq("tenant_id", ctx.tenantId)
+      .eq("active", true)
+      .order("name"),
+    ctx.supabase
+      .from("product_units")
+      .select("product_id, unit_id, factor_to_base, sell_price")
+      .eq("tenant_id", ctx.tenantId),
+    ctx.supabase
+      .from("units")
+      .select("id, name")
+      .eq("tenant_id", ctx.tenantId),
+  ]);
+
+  const unitNames = new Map(
+    (unitsRes.data ?? []).map((row) => [row.id, row.name])
+  );
+
+  type ProductRow = {
+    id: string;
+    name: string;
+    kind: string;
+    base_unit_id: string | null;
+    sell_price: number;
+  };
+  type ProductUnitRow = {
+    product_id: string;
+    unit_id: string;
+    factor_to_base: number;
+    sell_price: number | null;
+  };
+
+  const extraUnits = new Map<string, ProductUnitRow[]>();
+  for (const row of (productUnitsRes.data ?? []) as ProductUnitRow[]) {
+    const list = extraUnits.get(row.product_id) ?? [];
+    list.push(row);
+    extraUnits.set(row.product_id, list);
+  }
+
+  return ((productsRes.data ?? []) as ProductRow[]).map((product) => {
+    const seen = new Set<string>();
+    const units: ProductUnitOption[] = [];
+
+    if (product.base_unit_id) {
+      units.push({
+        id: product.base_unit_id,
+        name: unitNames.get(product.base_unit_id) ?? "satuan dasar",
+        price: product.sell_price,
+      });
+      seen.add(product.base_unit_id);
+    }
+
+    for (const unit of extraUnits.get(product.id) ?? []) {
+      if (seen.has(unit.unit_id)) continue;
+      units.push({
+        id: unit.unit_id,
+        name: unitNames.get(unit.unit_id) ?? "satuan",
+        price:
+          unit.sell_price ?? mulQty(unit.factor_to_base, product.sell_price),
+      });
+      seen.add(unit.unit_id);
+    }
+
+    return {
+      id: product.id,
+      name: product.name,
+      kind: product.kind,
+      sellPrice: product.sell_price,
+      units,
+    };
+  });
 }
