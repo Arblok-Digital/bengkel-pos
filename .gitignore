@@ -28,6 +28,9 @@
 .DS_Store
 *.pem
 
+# local scratch (log, pid, sql sementara)
+/tmp
+
 # debug
 npm-debug.log*
 yarn-debug.log*
