@@ -61,6 +61,16 @@ export default async function AppLayout({
                 Pengaturan
               </Link>
             ) : null}
+            {workspace?.mode === "bengkel" ? (
+              <Link href="/bengkel" className="hover:underline">
+                Bengkel
+              </Link>
+            ) : null}
+            {workspace?.mode === "toko" ? (
+              <Link href="/toko" className="hover:underline">
+                Toko Bangunan
+              </Link>
+            ) : null}
           </nav>
           {workspace ? (
             <Link href="/pilih-usaha" className="rounded border px-2 py-1 text-xs">
