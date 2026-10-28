@@ -4,13 +4,27 @@ import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/types";
-import { createPurchaseOrderSchema } from "./schema";
+import {
+  createPurchaseOrderSchema,
+  receiveGoodsSchema,
+} from "./schema";
 
 export type PurchaseOrderActionState = {
   error: string | null;
   success: {
     purchaseOrderId: string;
     poNo: string;
+    total: number;
+    status: string;
+    idempotent: boolean;
+  } | null;
+};
+
+export type ReceiveGoodsActionState = {
+  error: string | null;
+  success: {
+    goodsReceiptId: string;
+    grNo: string;
     total: number;
     status: string;
     idempotent: boolean;
@@ -103,6 +117,82 @@ export async function createPurchaseOrderAction(
     success: {
       purchaseOrderId: String(row.purchase_order_id ?? ""),
       poNo: String(row.po_no ?? ""),
+      total: Number(row.total ?? 0),
+      status: String(row.status ?? ""),
+      idempotent: Boolean(row.idempotent),
+    },
+  };
+}
+
+export async function receiveGoodsAction(
+  _prev: ReceiveGoodsActionState,
+  formData: FormData
+): Promise<ReceiveGoodsActionState> {
+  const tenantId = str(formData, "tenantId");
+  const outletId = str(formData, "outletId");
+  const supplierId = str(formData, "supplierId");
+  const purchaseOrderId = str(formData, "purchaseOrderId") || null;
+  const clientUuid = str(formData, "clientUuid");
+  const note = str(formData, "note") || null;
+  const items = parseJsonArray(formData, "items");
+
+  const parsed = receiveGoodsSchema.safeParse({
+    tenantId,
+    outletId,
+    supplierId,
+    purchaseOrderId,
+    clientUuid,
+    note,
+    items,
+  });
+
+  if (!parsed.success) {
+    return {
+      error: parsed.error.issues[0]?.message ?? "Isian penerimaan tidak valid.",
+      success: null,
+    };
+  }
+
+  const data = parsed.data;
+  const supabase = await createClient();
+  const { data: result, error } = await supabase.rpc("receive_goods", {
+    p_client_uuid: data.clientUuid,
+    p_tenant_id: data.tenantId,
+    p_outlet_id: data.outletId,
+    p_supplier_id: data.supplierId,
+    p_purchase_order_id: data.purchaseOrderId ?? null,
+    p_items: data.items.map((item) => ({
+      product_id: item.productId,
+      unit_id: item.unitId,
+      qty: item.qty,
+      unit_cost: item.unitCost,
+      purchaseOrderItemId: item.purchaseOrderItemId ?? null,
+      note: item.note ?? null,
+    })) as unknown as Json,
+    p_note: data.note ?? null,
+  });
+
+  if (error) {
+    return {
+      error: error.message.includes("berhak")
+        ? "Hanya owner/admin yang boleh menerima barang."
+        : error.message.includes("PO")
+          ? error.message
+          : "Gagal menerima barang.",
+      success: null,
+    };
+  }
+
+  const row = (result ?? {}) as Record<string, Json | undefined>;
+  revalidatePath("/penerimaan");
+  revalidatePath("/pembelian");
+  revalidatePath(`/penerimaan/${String(row.goods_receipt_id ?? "")}`);
+
+  return {
+    error: null,
+    success: {
+      goodsReceiptId: String(row.goods_receipt_id ?? ""),
+      grNo: String(row.gr_no ?? ""),
       total: Number(row.total ?? 0),
       status: String(row.status ?? ""),
       idempotent: Boolean(row.idempotent),
