@@ -65,6 +65,11 @@ export default async function AppLayout({
             <Link href="/hutang" className="hover:underline">
               Hutang
             </Link>
+            {workspace?.businessType !== "toko_bangunan" ? (
+              <Link href="/kendaraan" className="hover:underline">
+                Kendaraan
+              </Link>
+            ) : null}
             {canManage ? (
               <Link href="/pengaturan" className="hover:underline">
                 Pengaturan

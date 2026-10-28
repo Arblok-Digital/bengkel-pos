@@ -8,6 +8,7 @@ export type CatalogItem = {
 export type CatalogData = {
   tenantId: string;
   tenantName: string;
+  businessType: "bengkel" | "toko_bangunan" | "both";
   role: string;
   canWrite: boolean;
   categories: CatalogItem[];
@@ -25,7 +26,7 @@ export async function getCatalog(): Promise<CatalogData | null> {
 
   const { data: memberships, error } = await supabase
     .from("memberships")
-    .select("tenant_id, role, tenants(id, name)")
+    .select("tenant_id, role, tenants(id, name, business_type)")
     .eq("user_id", user.id)
     .eq("active", true)
     .limit(1);
@@ -55,6 +56,7 @@ export async function getCatalog(): Promise<CatalogData | null> {
   return {
     tenantId: membership.tenant_id,
     tenantName: tenant.name,
+    businessType: tenant.business_type,
     role: membership.role,
     canWrite: ["owner", "admin"].includes(membership.role),
     categories: categories ?? [],
