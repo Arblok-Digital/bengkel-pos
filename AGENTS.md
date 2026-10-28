@@ -241,7 +241,7 @@ Spec yang dulu basi sudah diperbaiki (branch `chore/T-e2e-baseline`):
 | `e2e/catalog.spec.ts` | Link "Katalog" dipulihkan di navigasi (regresi `ca59927`), login lewat helper. |
 | `e2e/auth-staff.spec.ts` | Assert `toHaveURL("/")` diganti pola `/(bengkel|toko)$/`, login lewat helper. |
 
-Risiko tersisa (belum diperbaiki, di luar scope task baseline): assert `toHaveURL("/")` setelah login masih ada di `customers`, `import`, `pos`, `products`, `shift`, dan `stock-adjustment`. Assert itu bisa lulus hanya karena redirect ke ruang kerja belum selesai. Kalau kamu menyentuh spec tersebut, ganti dengan `helpers.login(page)` — jangan menambah assert `"/"` baru.
+Setelah perapian lanjutan, **semua spec login lewat `helpers.login(page)`** dan tidak ada lagi assert `toHaveURL("/")` setelah login. `pwa.spec.ts` hanya membuka `/login` untuk membaca manifest, itu bukan login. Jangan mengembalikan pola assert `"/"`.
 
 ### 11.7 Ringkasan yang bisa dicek mesin
 

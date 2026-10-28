@@ -1,13 +1,11 @@
 import { test, expect } from "@playwright/test";
 
+import { login } from "./helpers";
+
 test("owner menyesuaikan stok dan melihat kartu stok", async ({ page }) => {
   const reason = `E2E koreksi ${Date.now().toString().slice(-6)}`;
 
-  await page.goto("/login");
-  await page.getByLabel("Email").fill("admin@bengkel.test");
-  await page.getByLabel("Kata sandi").fill("bengkel123");
-  await page.getByRole("button", { name: "Masuk" }).click();
-  await expect(page).toHaveURL("/");
+  await login(page);
 
   await page.goto("/stok/sesuaikan");
   await page.getByLabel("Produk").selectOption({ label: "Oli Mesin 1L" });

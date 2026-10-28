@@ -1,5 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { login } from "./helpers";
+
 /** Tutup shift yang tertinggal dari percobaan sebelumnya agar tes idempoten. */
 async function closeOpenShiftIfAny(page: Page) {
   const heading = page.getByRole("heading", { name: "Shift sedang berjalan" });
@@ -16,11 +18,7 @@ async function closeOpenShiftIfAny(page: Page) {
 }
 
 test("buka shift, tutup shift, selisih kas 0", async ({ page }) => {
-  await page.goto("/login");
-  await page.getByLabel("Email").fill("admin@bengkel.test");
-  await page.getByLabel("Kata sandi").fill("bengkel123");
-  await page.getByRole("button", { name: "Masuk" }).click();
-  await expect(page).toHaveURL("/");
+  await login(page);
 
   await page.goto("/kasir/shift");
   await expect(page).toHaveURL("/kasir/shift");

@@ -1,25 +1,6 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 
-async function login(page: Page) {
-  await page.goto("/login");
-  await page.getByLabel("Email").fill("admin@bengkel.test");
-  await page.getByLabel("Kata sandi").fill("bengkel123");
-  await page.getByRole("button", { name: "Masuk" }).click();
-  await expect(page).toHaveURL("/");
-}
-
-async function ensureShift(page: Page) {
-  await page.goto("/kasir");
-  const gate = page.getByRole("link", { name: "Buka kasir / atur shift" });
-  if ((await gate.count()) === 0) return;
-
-  await gate.click();
-  await expect(page).toHaveURL(/\/kasir\/shift/);
-  await page.getByLabel("Modal awal (Rp)").fill("100000");
-  await page.getByRole("button", { name: "Buka kasir" }).click();
-  await expect(page).toHaveURL(/opened=1/);
-  await page.goto("/kasir");
-}
+import { login, ensureShift } from "./helpers";
 
 test("jual barang dari layar kasir lalu tutup shift", async ({ page }) => {
   await login(page);

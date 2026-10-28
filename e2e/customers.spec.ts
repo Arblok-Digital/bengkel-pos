@@ -1,17 +1,15 @@
 import { test, expect } from "@playwright/test";
 
+import { login } from "./helpers";
+
 test("owner menambah pelanggan dan pemasok", async ({ page }) => {
   const suffix = Date.now().toString().slice(-6);
   const customer = `Pelanggan ${suffix}`;
   const supplier = `Pemasok ${suffix}`;
 
-  await page.goto("/login");
-  await page.getByLabel("Email").fill("admin@bengkel.test");
-  await page.getByLabel("Kata sandi").fill("bengkel123");
-  await page.getByRole("button", { name: "Masuk" }).click();
-  await expect(page).toHaveURL("/");
+  await login(page);
 
-  await page.getByRole("link", { name: "Pelanggan" }).click();
+  await page.getByRole("link", { name: "Pelanggan", exact: true }).click();
   await expect(page).toHaveURL("/pelanggan");
   await page.getByLabel("Nama pelanggan").fill(customer);
   await page.getByLabel("Limit kredit (Rp)").fill("100000");

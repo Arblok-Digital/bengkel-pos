@@ -67,7 +67,8 @@ test("penjualan kredit tempo dan validasi limit kredit pelanggan (T5.1)", async 
 
   // Bayar tunai 25.000, sisa 30.000 tempo (akumulasi piutang jadi 65.000 + 30.000 = 95.000 <= 100.000)
   await page.getByLabel("Nominal pembayaran 1").fill("25000");
-  await expect(payButton).toBeEnabled();
+  // Harga baris diambil dari server; tombol baru aktif setelah pricing selesai.
+  await expect(payButton).toBeEnabled({ timeout: 10_000 });
   await payButton.click();
 
   await expect(page.getByText(/Transaksi tersimpan: INV-/)).toBeVisible();
