@@ -66,9 +66,16 @@ export default async function AppLayout({
               Hutang
             </Link>
             {workspace?.businessType !== "toko_bangunan" ? (
-              <Link href="/kendaraan" className="hover:underline">
-                Kendaraan
-              </Link>
+              <>
+                <Link href="/kendaraan" className="hover:underline">
+                  Kendaraan
+                </Link>
+                {workspace?.mode === "bengkel" ? (
+                  <Link href="/bengkel/work-order" className="hover:underline">
+                    Work Order
+                  </Link>
+                ) : null}
+              </>
             ) : null}
             {canManage ? (
               <Link href="/pengaturan" className="hover:underline">
