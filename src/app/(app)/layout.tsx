@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { hasManagerRole } from "@/features/staff/queries";
 import { createClient } from "@/lib/supabase/server";
+import { getWorkspace } from "@/features/tenant/workspace";
 import { LogoutButton } from "./logout-button";
 
 export default async function AppLayout({
@@ -20,6 +21,7 @@ export default async function AppLayout({
   }
 
   const canManage = await hasManagerRole();
+  const workspace = await getWorkspace();
 
   return (
     <div className="min-h-screen">
@@ -60,6 +62,11 @@ export default async function AppLayout({
               </Link>
             ) : null}
           </nav>
+          {workspace ? (
+            <Link href="/pilih-usaha" className="rounded border px-2 py-1 text-xs">
+              {workspace.tenantName} · {workspace.mode === "bengkel" ? "Bengkel" : "Toko"}
+            </Link>
+          ) : null}
           <LogoutButton />
         </div>
       </header>
