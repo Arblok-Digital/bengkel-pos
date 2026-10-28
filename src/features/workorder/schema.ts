@@ -45,3 +45,19 @@ export const workOrderItemSchema = z.object({
   unitPrice: z.coerce.number().int().min(0, "Harga tidak boleh negatif"),
   note: z.string().trim().optional().nullable(),
 });
+
+export const workOrderSaleSchema = z.object({
+  workOrderId: z.guid(),
+  clientUuid: z.guid(),
+  paymentMethod: z.enum(["tunai", "transfer", "qris", "debit", "kredit_tempo"]),
+  paymentAmount: z.coerce
+    .number()
+    .int("Nominal pembayaran harus bilangan bulat rupiah")
+    .positive("Nominal pembayaran harus lebih dari 0"),
+  paymentReference: z
+    .string()
+    .trim()
+    .max(100, "Referensi pembayaran maksimal 100 karakter")
+    .optional(),
+  note: z.string().trim().max(500, "Catatan maksimal 500 karakter").optional(),
+});

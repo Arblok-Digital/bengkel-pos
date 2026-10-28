@@ -1,13 +1,16 @@
 import { test, expect } from "@playwright/test";
 
-import { login } from "./helpers";
+import { ensureShift, login } from "./helpers";
 
-test("work order dibuat dari form lengkap", async ({ page }) => {
+test("work order dibuat dari form lengkap lalu ditagihkan", async ({
+  page,
+}) => {
   const suffix = Date.now().toString().slice(-6);
   const customer = `Pelanggan WO ${suffix}`;
   const plate = `B ${suffix} WO`;
 
   await login(page);
+  await ensureShift(page);
 
   await page.goto("/pelanggan");
   await page.getByLabel("Nama pelanggan").fill(customer);
@@ -38,5 +41,27 @@ test("work order dibuat dari form lengkap", async ({ page }) => {
   await row.getByRole("link", { name: "Detail" }).click();
 
   await expect(page.getByRole("cell", { name: "Oli Mesin 1L" })).toBeVisible();
+  await expect(page.getByText("Rp 55.000").first()).toBeVisible();
+
+  // Antri -> dikerjakan -> selesai
+  await page.getByRole("button", { name: "Ubah ke Dikerjakan" }).click();
+  await expect(page).toHaveURL("/bengkel/work-order");
+  await page
+    .getByRole("row", { name: new RegExp(customer) })
+    .getByRole("link", { name: "Detail" })
+    .click();
+  await page.getByRole("button", { name: "Ubah ke Selesai" }).click();
+  await expect(page).toHaveURL("/bengkel/work-order");
+  await page
+    .getByRole("row", { name: new RegExp(customer) })
+    .getByRole("link", { name: "Detail" })
+    .click();
+
+  // Konversi work order menjadi nota penjualan (tunai, nominal = total).
+  await expect(page.getByRole("heading", { name: "Tagihkan Work Order" })).toBeVisible();
+  await page.getByRole("button", { name: "Buat penjualan & buka nota" }).click();
+
+  await expect(page).toHaveURL(/\/penjualan\/[0-9a-f-]{36}$/);
+  await expect(page.getByText("Lunas")).toBeVisible();
   await expect(page.getByText("Rp 55.000").first()).toBeVisible();
 });

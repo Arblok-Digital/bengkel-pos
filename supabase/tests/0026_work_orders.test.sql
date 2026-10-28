@@ -125,7 +125,7 @@ select is(
 ) from public.work_order_items;
 
 -- ════════════════════════════════════════════════════════════════════════════════
--- MEKANIK: ubah status antri -> dikerjakan -> ditagih, lalu tidak boleh ubah lagi
+-- MEKANIK: ubah status antri -> dikerjakan -> selesai; ditagih hanya lewat konversi
 -- ════════════════════════════════════════════════════════════════════════════════
 select tests_set_user('f1000000-0000-0000-0000-000000000034');
 
@@ -137,22 +137,22 @@ select is((public.update_work_order_status((select id from wo), 'dikerjakan') ->
 with wo as (
   select id from public.work_orders where status = 'dikerjakan' limit 1
 )
-select is((public.update_work_order_status((select id from wo), 'ditagih') ->> 'status'), 'ditagih', 'MEKANIK: ubah status ke ditagih') from wo;
+select is((public.update_work_order_status((select id from wo), 'selesai') ->> 'status'), 'selesai', 'MEKANIK: ubah status ke selesai') from wo;
 
 select throws_ok(
   $q$ select public.update_work_order_status(
-    (select id from public.work_orders where status = 'ditagih' limit 1),
-    'selesai'
+    (select id from public.work_orders where status = 'selesai' limit 1),
+    'ditagih'
   ) $q$,
   'P0001',
-  'Work order sudah ditagih: tidak boleh diubah',
-  'MEKANIK: ubah WO sudah ditagih ditolak'
+  'Status ditagih hanya bisa didapat lewat konversi penjualan',
+  'MEKANIK: status ditagih hanya lewat konversi penjualan'
 );
 
 select tests_set_postgres();
 select is(
   (select status from public.work_orders where wo_no like 'WO-%'),
-  'ditagih', 'VERIF: status tetap ditagih'
+  'selesai', 'VERIF: status tetap selesai'
 );
 
 -- ════════════════════════════════════════════════════════════════════════════════

@@ -121,6 +121,82 @@ isOneToOne: false
       referencedColumns: ["tenant_id","id"]
     }
                   ]
+                },"goods_receipt_items": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"goods_receipt_id": string,"id": string,"line_total": number,"note": string | null,"product_id": string,"purchase_order_item_id": string | null,"qty": number,"qty_base": number,"tenant_id": string,"unit_cost": number,"unit_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"goods_receipt_id": string,"id"?: string,"line_total": number,"note"?: string | null,"product_id": string,"purchase_order_item_id"?: string | null,"qty": number,"qty_base": number,"tenant_id": string,"unit_cost": number,"unit_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"goods_receipt_id"?: string,"id"?: string,"line_total"?: number,"note"?: string | null,"product_id"?: string,"purchase_order_item_id"?: string | null,"qty"?: number,"qty_base"?: number,"tenant_id"?: string,"unit_cost"?: number,"unit_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "goods_receipt_items_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "gri_gr_same_tenant"
+      columns: ["tenant_id","goods_receipt_id"]
+isOneToOne: false
+      referencedRelation: "goods_receipts"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "gri_product_same_tenant"
+      columns: ["tenant_id","product_id"]
+isOneToOne: false
+      referencedRelation: "products"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "gri_unit_same_tenant"
+      columns: ["tenant_id","unit_id"]
+isOneToOne: false
+      referencedRelation: "units"
+      referencedColumns: ["tenant_id","id"]
+    }
+                  ]
+                },"goods_receipts": {
+                  Row: {
+                    "client_uuid": string,"created_at": string,"created_by": string | null,"gr_no": string,"id": string,"note": string | null,"outlet_id": string,"purchase_order_id": string | null,"status": string,"supplier_id": string,"tenant_id": string,"total": number,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client_uuid": string,"created_at"?: string,"created_by"?: string | null,"gr_no": string,"id"?: string,"note"?: string | null,"outlet_id": string,"purchase_order_id"?: string | null,"status": string,"supplier_id": string,"tenant_id": string,"total": number,"updated_at"?: string
+                  }
+                  Update: {
+                    "client_uuid"?: string,"created_at"?: string,"created_by"?: string | null,"gr_no"?: string,"id"?: string,"note"?: string | null,"outlet_id"?: string,"purchase_order_id"?: string | null,"status"?: string,"supplier_id"?: string,"tenant_id"?: string,"total"?: number,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "goods_receipts_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "gr_outlet_same_tenant"
+      columns: ["tenant_id","outlet_id"]
+isOneToOne: false
+      referencedRelation: "outlets"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "gr_po_same_tenant"
+      columns: ["tenant_id","purchase_order_id"]
+isOneToOne: false
+      referencedRelation: "purchase_orders"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "gr_supplier_same_tenant"
+      columns: ["tenant_id","supplier_id"]
+isOneToOne: false
+      referencedRelation: "suppliers"
+      referencedColumns: ["tenant_id","id"]
+    }
+                  ]
                 },"memberships": {
                   Row: {
                     "active": boolean,"created_at": string,"created_by": string | null,"id": string,"outlet_ids": (string)[],"role": string,"tenant_id": string,"updated_at": string,"user_id": string
@@ -155,6 +231,70 @@ isOneToOne: false
                   Relationships: [
                     {
       foreignKeyName: "outlets_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"payable_payments": {
+                  Row: {
+                    "amount": number,"client_uuid": string,"created_at": string,"created_by": string | null,"id": string,"method": string,"paid_at": string,"payable_id": string,"reference": string | null,"tenant_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "amount": number,"client_uuid": string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"method": string,"paid_at"?: string,"payable_id": string,"reference"?: string | null,"tenant_id": string
+                  }
+                  Update: {
+                    "amount"?: number,"client_uuid"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"method"?: string,"paid_at"?: string,"payable_id"?: string,"reference"?: string | null,"tenant_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "payable_payment_payable_same_tenant"
+      columns: ["tenant_id","payable_id"]
+isOneToOne: false
+      referencedRelation: "payables"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "payable_payments_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"payables": {
+                  Row: {
+                    "amount": number,"client_uuid": string,"created_at": string,"created_by": string | null,"due_date": string,"id": string,"note": string | null,"outlet_id": string,"purchase_order_id": string | null,"status": string,"supplier_id": string,"tenant_id": string,"total_paid": number,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "amount": number,"client_uuid": string,"created_at"?: string,"created_by"?: string | null,"due_date": string,"id"?: string,"note"?: string | null,"outlet_id": string,"purchase_order_id"?: string | null,"status": string,"supplier_id": string,"tenant_id": string,"total_paid"?: number,"updated_at"?: string
+                  }
+                  Update: {
+                    "amount"?: number,"client_uuid"?: string,"created_at"?: string,"created_by"?: string | null,"due_date"?: string,"id"?: string,"note"?: string | null,"outlet_id"?: string,"purchase_order_id"?: string | null,"status"?: string,"supplier_id"?: string,"tenant_id"?: string,"total_paid"?: number,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "payable_outlet_same_tenant"
+      columns: ["tenant_id","outlet_id"]
+isOneToOne: false
+      referencedRelation: "outlets"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "payable_po_same_tenant"
+      columns: ["tenant_id","purchase_order_id"]
+isOneToOne: false
+      referencedRelation: "purchase_orders"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "payable_supplier_same_tenant"
+      columns: ["tenant_id","supplier_id"]
+isOneToOne: false
+      referencedRelation: "suppliers"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "payables_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false
       referencedRelation: "tenants"
@@ -338,6 +478,102 @@ isOneToOne: false
       columns: ["tenant_id","base_unit_id"]
 isOneToOne: false
       referencedRelation: "units"
+      referencedColumns: ["tenant_id","id"]
+    }
+                  ]
+                },"purchase_order_items": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"id": string,"line_total": number,"note": string | null,"product_id": string,"purchase_order_id": string,"qty": number,"qty_base": number,"tenant_id": string,"unit_id": string,"unit_price": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"line_total": number,"note"?: string | null,"product_id": string,"purchase_order_id": string,"qty": number,"qty_base": number,"tenant_id": string,"unit_id": string,"unit_price": number
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"line_total"?: number,"note"?: string | null,"product_id"?: string,"purchase_order_id"?: string,"qty"?: number,"qty_base"?: number,"tenant_id"?: string,"unit_id"?: string,"unit_price"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "poi_po_same_tenant"
+      columns: ["tenant_id","purchase_order_id"]
+isOneToOne: false
+      referencedRelation: "purchase_orders"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "poi_product_same_tenant"
+      columns: ["tenant_id","product_id"]
+isOneToOne: false
+      referencedRelation: "products"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "poi_unit_same_tenant"
+      columns: ["tenant_id","unit_id"]
+isOneToOne: false
+      referencedRelation: "units"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "purchase_order_items_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"purchase_orders": {
+                  Row: {
+                    "client_uuid": string,"created_at": string,"created_by": string | null,"id": string,"note": string | null,"outlet_id": string,"po_no": string,"status": string,"supplier_id": string,"tenant_id": string,"total": number,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client_uuid": string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"note"?: string | null,"outlet_id": string,"po_no": string,"status": string,"supplier_id": string,"tenant_id": string,"total": number,"updated_at"?: string
+                  }
+                  Update: {
+                    "client_uuid"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"note"?: string | null,"outlet_id"?: string,"po_no"?: string,"status"?: string,"supplier_id"?: string,"tenant_id"?: string,"total"?: number,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "po_outlet_same_tenant"
+      columns: ["tenant_id","outlet_id"]
+isOneToOne: false
+      referencedRelation: "outlets"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "po_supplier_same_tenant"
+      columns: ["tenant_id","supplier_id"]
+isOneToOne: false
+      referencedRelation: "suppliers"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "purchase_orders_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"receivable_payments": {
+                  Row: {
+                    "amount": number,"created_at": string,"created_by": string | null,"id": string,"method": string,"paid_at": string,"receivable_id": string,"reference": string | null,"tenant_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "amount": number,"created_at"?: string,"created_by"?: string | null,"id"?: string,"method": string,"paid_at"?: string,"receivable_id": string,"reference"?: string | null,"tenant_id": string
+                  }
+                  Update: {
+                    "amount"?: number,"created_at"?: string,"created_by"?: string | null,"id"?: string,"method"?: string,"paid_at"?: string,"receivable_id"?: string,"reference"?: string | null,"tenant_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "receivable_payments_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "rp_receivable_same_tenant"
+      columns: ["tenant_id","receivable_id"]
+isOneToOne: false
+      referencedRelation: "receivables"
       referencedColumns: ["tenant_id","id"]
     }
                   ]
@@ -689,8 +925,7 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },
-                "vehicles": {
+                },"vehicles": {
                   Row: {
                     "active": boolean,"brand": string | null,"created_at": string,"created_by": string | null,"customer_id": string,"id": string,"last_odometer": number | null,"model": string | null,"plate_no": string,"tenant_id": string,"updated_at": string,"vin": string | null,"year": number | null
                   }
@@ -705,98 +940,96 @@ isOneToOne: false
                     {
       foreignKeyName: "vehicle_customer_same_tenant"
       columns: ["tenant_id","customer_id"]
-      isOneToOne: false
+isOneToOne: false
       referencedRelation: "customers"
       referencedColumns: ["tenant_id","id"]
     },{
       foreignKeyName: "vehicles_tenant_id_fkey"
       columns: ["tenant_id"]
-      isOneToOne: false
+isOneToOne: false
       referencedRelation: "tenants"
       referencedColumns: ["id"]
     }
                   ]
-                },
-                "work_orders": {
+                },"work_order_items": {
                   Row: {
-                    "complaint": string,"created_at": string,"created_by": string | null,"customer_id": string,"diagnosis": string | null,"estimate_total": number,"id": string,"mechanic_id": string | null,"odometer": number | null,"outlet_id": string,"sale_id": string | null,"status": string,"tenant_id": string,"updated_at": string,"vehicle_id": string,"wo_no": string,"queue_no": number
+                    "created_at": string,"created_by": string | null,"id": string,"line_total": number,"note": string | null,"product_id": string | null,"qty": number,"qty_base": number,"tenant_id": string,"unit_id": string | null,"unit_price": number,"work_order_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "complaint": string,"created_at"?: string,"created_by"?: string | null,"customer_id": string,"diagnosis"?: string | null,"estimate_total"?: number,"id"?: string,"mechanic_id"?: string | null,"odometer"?: number | null,"outlet_id": string,"sale_id"?: string | null,"status": string,"tenant_id": string,"updated_at"?: string,"vehicle_id": string,"wo_no": string,"queue_no": number
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"line_total": number,"note"?: string | null,"product_id"?: string | null,"qty": number,"qty_base": number,"tenant_id": string,"unit_id"?: string | null,"unit_price": number,"work_order_id": string
                   }
                   Update: {
-                    "complaint"?: string,"created_at"?: string,"created_by"?: string | null,"customer_id"?: string,"diagnosis"?: string | null,"estimate_total"?: number,"id"?: string,"mechanic_id"?: string | null,"odometer"?: number | null,"outlet_id"?: string,"sale_id"?: string | null,"status"?: string,"tenant_id"?: string,"updated_at"?: string,"vehicle_id"?: string,"wo_no"?: string,"queue_no"?: number
-                  }
-                  Relationships: [
-                    {
-      foreignKeyName: "work_orders_customer_same_tenant"
-      columns: ["tenant_id","customer_id"]
-      isOneToOne: false
-      referencedRelation: "customers"
-      referencedColumns: ["tenant_id","id"]
-    },{
-      foreignKeyName: "work_orders_outlet_same_tenant"
-      columns: ["tenant_id","outlet_id"]
-      isOneToOne: false
-      referencedRelation: "outlets"
-      referencedColumns: ["tenant_id","id"]
-    },{
-      foreignKeyName: "work_orders_tenant_id_fkey"
-      columns: ["tenant_id"]
-      isOneToOne: false
-      referencedRelation: "tenants"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "work_orders_vehicle_customer_match"
-      columns: ["tenant_id","customer_id","vehicle_id"]
-      isOneToOne: false
-      referencedRelation: "vehicles"
-      referencedColumns: ["tenant_id","customer_id","id"]
-    },{
-      foreignKeyName: "work_orders_vehicle_same_tenant"
-      columns: ["tenant_id","vehicle_id"]
-      isOneToOne: false
-      referencedRelation: "vehicles"
-      referencedColumns: ["tenant_id","id"]
-    }
-                  ]
-                },
-                "work_order_items": {
-                  Row: {
-                    "created_at": string,"created_by": string | null,"id": string,"line_total": number,"note": string | null,"product_id": string | null,"qty": number,"qty_base": number,"tenant_id": string,"unit_id": string | null,"unit_price": number,"updated_at": string,"work_order_id": string
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"line_total": number,"note"?: string | null,"product_id"?: string | null,"qty": number,"qty_base": number,"tenant_id": string,"unit_id"?: string | null,"unit_price": number,"updated_at"?: string,"work_order_id": string
-                  }
-                  Update: {
-                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"line_total"?: number,"note"?: string | null,"product_id"?: string | null,"qty"?: number,"qty_base"?: number,"tenant_id"?: string,"unit_id"?: string | null,"unit_price"?: number,"updated_at"?: string,"work_order_id"?: string
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"line_total"?: number,"note"?: string | null,"product_id"?: string | null,"qty"?: number,"qty_base"?: number,"tenant_id"?: string,"unit_id"?: string | null,"unit_price"?: number,"work_order_id"?: string
                   }
                   Relationships: [
                     {
       foreignKeyName: "work_order_items_product_same_tenant"
       columns: ["tenant_id","product_id"]
-      isOneToOne: false
+isOneToOne: false
       referencedRelation: "products"
       referencedColumns: ["tenant_id","id"]
     },{
       foreignKeyName: "work_order_items_tenant_id_fkey"
       columns: ["tenant_id"]
-      isOneToOne: false
+isOneToOne: false
       referencedRelation: "tenants"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "work_order_items_unit_same_tenant"
       columns: ["tenant_id","unit_id"]
-      isOneToOne: false
+isOneToOne: false
       referencedRelation: "units"
       referencedColumns: ["tenant_id","id"]
     },{
       foreignKeyName: "work_order_items_wo_same_tenant"
       columns: ["tenant_id","work_order_id"]
-      isOneToOne: false
+isOneToOne: false
       referencedRelation: "work_orders"
+      referencedColumns: ["tenant_id","id"]
+    }
+                  ]
+                },"work_orders": {
+                  Row: {
+                    "complaint": string,"created_at": string,"created_by": string | null,"customer_id": string,"diagnosis": string | null,"estimate_total": number,"id": string,"mechanic_id": string | null,"odometer": number | null,"outlet_id": string,"queue_no": number,"sale_id": string | null,"status": string,"tenant_id": string,"updated_at": string,"vehicle_id": string,"wo_no": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "complaint": string,"created_at"?: string,"created_by"?: string | null,"customer_id": string,"diagnosis"?: string | null,"estimate_total"?: number,"id"?: string,"mechanic_id"?: string | null,"odometer"?: number | null,"outlet_id": string,"queue_no": number,"sale_id"?: string | null,"status": string,"tenant_id": string,"updated_at"?: string,"vehicle_id": string,"wo_no": string
+                  }
+                  Update: {
+                    "complaint"?: string,"created_at"?: string,"created_by"?: string | null,"customer_id"?: string,"diagnosis"?: string | null,"estimate_total"?: number,"id"?: string,"mechanic_id"?: string | null,"odometer"?: number | null,"outlet_id"?: string,"queue_no"?: number,"sale_id"?: string | null,"status"?: string,"tenant_id"?: string,"updated_at"?: string,"vehicle_id"?: string,"wo_no"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "work_orders_customer_same_tenant"
+      columns: ["tenant_id","customer_id"]
+isOneToOne: false
+      referencedRelation: "customers"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "work_orders_outlet_same_tenant"
+      columns: ["tenant_id","outlet_id"]
+isOneToOne: false
+      referencedRelation: "outlets"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "work_orders_sale_same_tenant"
+      columns: ["tenant_id","sale_id"]
+isOneToOne: false
+      referencedRelation: "sales"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "work_orders_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "work_orders_vehicle_same_tenant"
+      columns: ["tenant_id","vehicle_id"]
+isOneToOne: false
+      referencedRelation: "vehicles"
       referencedColumns: ["tenant_id","id"]
     }
                   ]
@@ -841,6 +1074,12 @@ isOneToOne: false
 "close_cash_shift":
 { Args: { "p_client_uuid": string,"p_closing_cash_counted": number,"p_note": string,"p_shift_id": string }; Returns: Json
                            },
+"create_payable":
+{ Args: { "p_amount": number,"p_client_uuid": string,"p_due_date": string,"p_note": string,"p_outlet_id": string,"p_purchase_order_id": string,"p_supplier_id": string,"p_tenant_id": string }; Returns: Json
+                           },
+"create_purchase_order":
+{ Args: { "p_client_uuid": string,"p_items": Json,"p_note": string,"p_outlet_id": string,"p_supplier_id": string,"p_tenant_id": string }; Returns: Json
+                           },
 "create_sale":
 { Args: { "p_client_uuid": string,"p_customer_id": string,"p_items": Json,"p_note": string,"p_outlet_id": string,"p_payments": Json,"p_shift_id": string,"p_tenant_id": string,"p_vehicle_id": string,"p_work_order_id": string }; Returns: Json
                            },
@@ -855,7 +1094,25 @@ isOneToOne: false
               "outlet_id": string,"tenant_id": string
             }[]
                            },
+"create_work_order":
+{ Args: { "p_complaint": string,"p_customer_id": string,"p_diagnosis": string,"p_estimate_total": number,"p_items": Json,"p_mechanic_id": string,"p_odometer": number,"p_outlet_id": string,"p_tenant_id": string,"p_vehicle_id": string }; Returns: Json
+                           },
+"create_work_order_sale":
+{ Args: { "p_client_uuid": string,"p_note": string,"p_payments": Json,"p_shift_id": string,"p_work_order_id": string }; Returns: Json
+                           },
+"generate_gr_no":
+{ Args: { "p_outlet_id": string,"p_tenant_id": string }; Returns: string
+                           },
 "generate_invoice_no":
+{ Args: { "p_outlet_id": string,"p_tenant_id": string }; Returns: string
+                           },
+"generate_po_no":
+{ Args: { "p_outlet_id": string,"p_tenant_id": string }; Returns: string
+                           },
+"generate_queue_no":
+{ Args: { "p_outlet_id": string,"p_tenant_id": string }; Returns: number
+                           },
+"generate_wo_no":
 { Args: { "p_outlet_id": string,"p_tenant_id": string }; Returns: string
                            },
 "has_role":
@@ -870,6 +1127,12 @@ isOneToOne: false
 "open_cash_shift":
 { Args: { "p_client_uuid": string,"p_opening_cash": number,"p_outlet_id": string,"p_tenant_id": string }; Returns: string
                            },
+"pay_payable":
+{ Args: { "p_amount": number,"p_client_uuid": string,"p_method": string,"p_payable_id": string,"p_reference": string,"p_tenant_id": string }; Returns: Json
+                           },
+"pay_receivable":
+{ Args: { "p_amount": number,"p_method": string,"p_receivable_id": string,"p_reference"?: string,"p_tenant_id": string }; Returns: Json
+                           },
 "pos_catalog":
 { Args: { "p_outlet_id": string,"p_tenant_id": string,"p_tier_id": string }; Returns: {
               "barcode": string,"base_unit_id": string,"base_unit_name": string,"is_low": boolean,"min_stock": number,"name": string,"price": number,"product_id": string,"sku": string,"stock_qty": number,"track_stock": boolean,"units": Json
@@ -877,6 +1140,9 @@ isOneToOne: false
                            },
 "post_stock_opname":
 { Args: { "p_opname_id": string }; Returns: number
+                           },
+"receive_goods":
+{ Args: { "p_client_uuid": string,"p_items": Json,"p_note": string,"p_outlet_id": string,"p_purchase_order_id": string,"p_supplier_id": string,"p_tenant_id": string }; Returns: Json
                            },
 "resolve_price":
 { Args: { "p_product_id": string,"p_qty": number,"p_tenant_id": string,"p_tier_id": string,"p_unit_id": string }; Returns: number
@@ -892,6 +1158,9 @@ isOneToOne: false
                            },
 "sync_sale":
 { Args: { "p_client_uuid": string,"p_customer_id": string,"p_items": Json,"p_local_invoice_no": string,"p_note": string,"p_outlet_id": string,"p_payments": Json,"p_shift_id": string,"p_tenant_id": string,"p_vehicle_id": string,"p_work_order_id": string }; Returns: Json
+                           },
+"update_work_order_status":
+{ Args: { "p_status": string,"p_wo_id": string }; Returns: Json
                            },
 "void_sale":
 { Args: { "p_client_uuid": string,"p_reason": string,"p_sale_id": string }; Returns: Json

@@ -4,8 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import type { Json } from "@/lib/supabase/types";
+import { getPosShift } from "@/features/pos/queries";
 import {
   workOrderItemSchema,
+  workOrderSaleSchema,
   workOrderSchema,
   workOrderStatusSchema,
 } from "./schema";
@@ -52,6 +55,27 @@ function mapError(code: string | undefined, message?: string): string {
   if (code === "P0001" && message) return message;
   if (code === "P0001") return "Validasi work order gagal.";
   return "Gagal menyimpan work order.";
+}
+
+function workOrderSaleError(message: string): string {
+  const known = [
+    "Work order",
+    "Stok",
+    "Harga",
+    "Satuan",
+    "Shift",
+    "Pembayaran",
+    "Pelanggan",
+    "Kredit",
+    "Nominal",
+    "client_uuid",
+    "berhak",
+  ];
+  return known.some((fragment) =>
+    message.toLowerCase().includes(fragment.toLowerCase())
+  )
+    ? message
+    : "Gagal membuat penjualan dari work order.";
 }
 
 export async function createWorkOrderAction(
@@ -174,8 +198,71 @@ export async function updateWorkOrderStatusAction(
     p_status: parsed.data.status,
   });
 
-  if (error) return { error: mapError((error as { code?: string; message?: string })?.code, (error as { message?: string })?.message) };
+  if (error)
+    return {
+      error: mapError(
+        (error as { code?: string })?.code,
+        (error as { message?: string })?.message
+      ),
+    };
 
   revalidatePath("/bengkel/work-order");
   redirect("/bengkel/work-order");
+}
+
+export async function convertWorkOrderToSaleAction(
+  _prev: WorkOrderActionState,
+  formData: FormData
+): Promise<WorkOrderActionState> {
+  const parsed = workOrderSaleSchema.safeParse({
+    workOrderId: str(formData, "workOrderId"),
+    clientUuid: str(formData, "clientUuid"),
+    paymentMethod: str(formData, "paymentMethod"),
+    paymentAmount: str(formData, "paymentAmount"),
+    paymentReference: str(formData, "paymentReference") || undefined,
+    note: str(formData, "note") || undefined,
+  });
+
+  if (!parsed.success) {
+    return {
+      error: parsed.error.issues[0]?.message ?? "Pembayaran work order tidak valid.",
+    };
+  }
+
+  const supabase = await createClient();
+  const shiftContext = await getPosShift();
+  if (!shiftContext?.shift) {
+    return {
+      error: "Buka shift kasir terlebih dahulu sebelum menagihkan work order.",
+    };
+  }
+
+  const { data, error } = await supabase.rpc("create_work_order_sale", {
+    p_work_order_id: parsed.data.workOrderId,
+    p_client_uuid: parsed.data.clientUuid,
+    p_payments: [
+      {
+        method: parsed.data.paymentMethod,
+        amount: parsed.data.paymentAmount,
+        reference: parsed.data.paymentReference ?? null,
+      },
+    ] as unknown as Json,
+    p_note: parsed.data.note ?? null,
+    p_shift_id: shiftContext.shift.id,
+  });
+
+  if (error) return { error: workOrderSaleError(error.message) };
+
+  const result = (data ?? {}) as Record<string, Json | undefined>;
+  const saleId = String(result.sale_id ?? "");
+  if (!saleId) {
+    return { error: "Penjualan work order tidak mengembalikan nomor transaksi." };
+  }
+
+  revalidatePath("/bengkel/work-order");
+  revalidatePath(`/bengkel/work-order/${parsed.data.workOrderId}`);
+  revalidatePath("/penjualan");
+  revalidatePath("/stok");
+  revalidatePath("/kasir");
+  redirect(`/penjualan/${saleId}`);
 }

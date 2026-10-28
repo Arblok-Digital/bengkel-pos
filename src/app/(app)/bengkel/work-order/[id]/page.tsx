@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { getWorkOrderDetail } from "@/features/workorder/queries";
 import { formatRupiah } from "@/lib/money";
+import { WorkOrderSaleForm } from "./work-order-sale-form";
 import { WorkOrderStatusForm } from "./work-order-status-form";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -37,8 +38,11 @@ export default async function WorkOrderDetailPage({
 
   const { workOrder, items } = detail;
 
-  const canTransition =
-    workOrder.status !== "ditagih" && workOrder.status !== "dibatalkan";
+  // Status 'ditagih' hanya didapat lewat konversi penjualan, jadi tombol ubah
+  // status hanya muncul untuk WO yang masih punya langkah berikutnya.
+  const canTransition = ["antri", "dikerjakan", "menunggu_part"].includes(
+    workOrder.status
+  );
 
   return (
     <div className="mx-auto max-w-4xl flex flex-col gap-6">
@@ -156,6 +160,26 @@ export default async function WorkOrderDetailPage({
           </table>
         </div>
       </div>
+
+      {workOrder.saleId ? (
+        <section className="rounded-lg border border-blue-200 bg-blue-50 p-5">
+          <h2 className="text-lg font-semibold text-blue-950">Work order sudah ditagihkan</h2>
+          <p className="mt-1 text-sm text-blue-900">
+            Penjualan untuk work order ini sudah dibuat. Perubahan stok dan pembayaran tercatat pada nota tersebut.
+          </p>
+          <Link
+            href={`/penjualan/${workOrder.saleId}`}
+            className="mt-3 inline-flex min-h-11 items-center rounded-md bg-blue-700 px-4 text-sm font-medium text-white hover:bg-blue-800"
+          >
+            Buka nota penjualan
+          </Link>
+        </section>
+      ) : workOrder.status === "selesai" && items.length > 0 ? (
+        <WorkOrderSaleForm
+          workOrderId={workOrder.id}
+          estimatedTotal={items.reduce((sum, item) => sum + item.lineTotal, 0)}
+        />
+      ) : null}
 
       {canTransition && (
         <div className="rounded-lg border bg-card p-6">

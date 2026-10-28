@@ -5,7 +5,8 @@ export async function login(page: Page) {
   await page.getByLabel("Email").fill("admin@bengkel.test");
   await page.getByLabel("Kata sandi").fill("bengkel123");
   await page.getByRole("button", { name: "Masuk" }).click();
-  await expect(page).toHaveURL("/");
+  // "/" adalah dashboard yang selalu redirect ke ruang kerja aktif.
+  await expect(page).toHaveURL(/\/(bengkel|toko)$/);
 }
 
 export async function ensureShift(page: Page) {
