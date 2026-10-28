@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { getGoodsReceiptsPage } from "@/features/purchasing/queries";
+import {
+  getGoodsReceiptsPage,
+  getOutletOptions,
+  getProductOptions,
+  getSupplierOptions,
+  getUnitOptions,
+  getReceivablePurchaseOrders,
+} from "@/features/purchasing/queries";
 import { ReceiveGoodsForm } from "./create";
 
 export default async function GoodsReceiptsPage() {
@@ -10,6 +17,14 @@ export default async function GoodsReceiptsPage() {
   if (!data) {
     redirect("/onboarding");
   }
+
+  const [outlets, suppliers, products, units, purchaseOrders] = await Promise.all([
+    getOutletOptions(),
+    getSupplierOptions(),
+    getProductOptions(),
+    getUnitOptions(),
+    getReceivablePurchaseOrders(),
+  ]);
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
@@ -31,7 +46,14 @@ export default async function GoodsReceiptsPage() {
       </div>
 
       {data.canWrite ? (
-        <ReceiveGoodsForm />
+        <ReceiveGoodsForm
+          tenantId={data.tenantId}
+          outlets={outlets}
+          suppliers={suppliers}
+          products={products}
+          units={units}
+          purchaseOrders={purchaseOrders}
+        />
       ) : (
         <p className="text-muted-foreground text-sm">
           Hanya pemilik/admin yang dapat menerima barang.

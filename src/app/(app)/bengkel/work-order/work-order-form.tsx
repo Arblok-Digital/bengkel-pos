@@ -1,23 +1,25 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { createWorkOrderAction, type WorkOrderActionState } from "@/features/workorder/actions";
-import { getCustomerOptions } from "@/features/workorder/queries";
+import {
+  createWorkOrderAction,
+  type WorkOrderActionState,
+} from "@/features/workorder/actions";
+import type { CustomerOption } from "@/features/workorder/queries";
 
 const initialState: WorkOrderActionState = { error: null };
-
-type CustomerOption = { id: string; name: string };
 
 export function WorkOrderForm({
   tenantId,
   outletId,
+  customers,
 }: {
   tenantId: string;
   outletId: string;
+  customers: CustomerOption[];
 }) {
-  const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [state, formAction, pending] = useActionState(
     createWorkOrderAction,
     initialState
@@ -26,14 +28,9 @@ export function WorkOrderForm({
     { productId: "", unitId: "", qty: "", unitPrice: "", note: "" },
   ]);
 
-  useEffect(() => {
-    getCustomerOptions().then((c) => setCustomers(c));
-  }, []);
-
   const addItem = () => {
     setItems([...items, { productId: "", unitId: "", qty: "", unitPrice: "", note: "" }]);
   };
-
   const removeItem = (idx: number) => {
     if (items.length > 1) setItems(items.filter((_, i) => i !== idx));
   };

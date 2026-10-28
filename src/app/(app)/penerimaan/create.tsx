@@ -1,18 +1,20 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
   receiveGoodsAction,
+  getPoItemsAction,
   type ReceiveGoodsActionState,
 } from "@/features/purchasing/actions";
-import {
-  getOutletOptions,
-  getPoItemsForReceiving,
-  getProductOptions,
-  getSupplierOptions,
-  getUnitOptions,
+import type {
+  OutletSelectOption,
+  SupplierSelectOption,
+  ProductSelectOption,
+  UnitSelectOption,
+  PurchaseOrderSelectOption,
+  PoItemForReceiving,
 } from "@/features/purchasing/queries";
 
 const initialState: ReceiveGoodsActionState = {
@@ -31,26 +33,21 @@ type GrItem = {
   note: string;
 };
 
-export function ReceiveGoodsForm() {
-  const [outlets, setOutlets] = useState<{ id: string; name: string }[]>([]);
-  const [suppliers, setSuppliers] = useState<{ id: string; name: string }[]>(
-    []
-  );
-  const [products, setProducts] = useState<{
-    id: string;
-    name: string;
-    baseUnitId: string | null;
-  }[]>([]);
-  const [units, setUnits] = useState<{ id: string; name: string }[]>([]);
-  const [poItems, setPoItems] = useState<{
-    id: string;
-    productId: string;
-    productName: string;
-    unitId: string;
-    unitName: string;
-    remainingQtyBase: number;
-    unitCost: number;
-  }[]>([]);
+export function ReceiveGoodsForm({
+  tenantId,
+  outlets,
+  suppliers,
+  products,
+  units,
+  purchaseOrders,
+}: {
+  tenantId: string;
+  outlets: OutletSelectOption[];
+  suppliers: SupplierSelectOption[];
+  products: ProductSelectOption[];
+  units: UnitSelectOption[];
+  purchaseOrders: PurchaseOrderSelectOption[];
+}) {
   const [items, setItems] = useState<GrItem[]>([
     {
       productId: "",
@@ -66,13 +63,7 @@ export function ReceiveGoodsForm() {
   const [supplierId, setSupplierId] = useState("");
   const [outletId, setOutletId] = useState("");
   const [purchaseOrderId, setPurchaseOrderId] = useState("");
-
-  useEffect(() => {
-    getOutletOptions().then(setOutlets);
-    getSupplierOptions().then(setSuppliers);
-    getProductOptions().then(setProducts);
-    getUnitOptions().then(setUnits);
-  }, []);
+  const [poItems, setPoItems] = useState<PoItemForReceiving[]>([]);
 
   const [state, formAction, pending] = useActionState(
     receiveGoodsAction,
@@ -85,18 +76,8 @@ export function ReceiveGoodsForm() {
       setPoItems([]);
       return;
     }
-    const rows = await getPoItemsForReceiving(id);
-    setPoItems(
-      rows.filter((r) => r.remainingQtyBase > 0).map((r) => ({
-        id: r.id,
-        productId: r.productId,
-        productName: r.productName,
-        unitId: r.unitId,
-        unitName: r.unitName,
-        remainingQtyBase: r.remainingQtyBase,
-        unitCost: r.unitCost,
-      }))
-    );
+    const rows = await getPoItemsAction(id);
+    setPoItems(rows.filter((r) => r.remainingQtyBase > 0));
   };
 
   const addItem = () => {
@@ -141,6 +122,7 @@ export function ReceiveGoodsForm() {
 
   return (
     <form action={formAction} className="rounded-lg border bg-card p-4 space-y-4">
+      <input type="hidden" name="tenantId" value={tenantId} />
       <input type="hidden" name="clientUuid" defaultValue={crypto.randomUUID()} />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -180,16 +162,21 @@ export function ReceiveGoodsForm() {
         </label>
         <label className="flex flex-col gap-1 text-sm sm:col-span-2">
           <span className="font-medium">PO Referensi (opsional)</span>
-          <select
-            name="purchaseOrderId"
-            value={purchaseOrderId}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-              handlePoChange(e.target.value)
-            }
-            className="h-9 rounded-md border border-input bg-background px-2"
-          >
-            <option value="">Pilih PO untuk diterima</option>
-          </select>
+           <select
+             name="purchaseOrderId"
+             value={purchaseOrderId}
+             onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+               handlePoChange(e.target.value)
+             }
+             className="h-9 rounded-md border border-input bg-background px-2"
+           >
+             <option value="">Pilih PO untuk diterima</option>
+             {purchaseOrders.map((po) => (
+               <option key={po.id} value={po.id}>
+                 {po.poNo} · {po.supplierName}
+               </option>
+             ))}
+           </select>
         </label>
         <label className="flex flex-col gap-1 text-sm sm:col-span-2">
           <span className="font-medium">Catatan</span>

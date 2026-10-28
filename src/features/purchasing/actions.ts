@@ -10,6 +10,8 @@ import {
   receiveGoodsSchema,
   payPayableSchema,
 } from "./schema";
+import { getPoItemsForReceiving } from "./queries";
+import type { PoItemForReceiving } from "./queries";
 
 export type PurchaseOrderActionState = {
   error: string | null;
@@ -360,4 +362,16 @@ export async function payPayableAction(
       idempotent: Boolean(row.idempotent),
     },
   };
+}
+
+/**
+ * Wrapper server action untuk fetch item PO yang masih bisa diterima.
+ * Dipanggil dari client component (select PO) sehingga `next/headers`
+ * di `createClient()` tetap dieksekusi di sisi server.
+ */
+export async function getPoItemsAction(
+  purchaseOrderId: string
+): Promise<PoItemForReceiving[]> {
+  if (!purchaseOrderId) return [];
+  return getPoItemsForReceiving(purchaseOrderId);
 }

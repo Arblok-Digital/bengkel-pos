@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getWorkOrdersPage } from "@/features/workorder/queries";
+import { getCustomerOptions } from "@/features/workorder/queries";
 import { WorkOrderForm } from "./work-order-form";
 
 export default async function WorkOrderPage() {
@@ -12,6 +13,11 @@ export default async function WorkOrderPage() {
   }
 
   const outletId = data.workOrders[0]?.outletId || "";
+
+  const customers =
+    data.businessType !== "toko_bangunan" && data.canWrite
+      ? await getCustomerOptions()
+      : [];
 
   const STATUS_LABEL: Record<string, string> = {
     antri: "Antrian",
@@ -48,7 +54,11 @@ export default async function WorkOrderPage() {
       ) : (
         <>
           {data.canWrite ? (
-            <WorkOrderForm tenantId={data.tenantId} outletId={outletId} />
+            <WorkOrderForm
+              tenantId={data.tenantId}
+              outletId={outletId}
+              customers={customers}
+            />
           ) : (
             <p className="text-muted-foreground text-sm">
               Hanya pemilik/admin/mekanik yang dapat membuat work order.

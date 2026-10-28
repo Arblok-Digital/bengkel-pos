@@ -1,28 +1,25 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
   createVehicleAction,
   type VehicleActionState,
 } from "@/features/vehicles/actions";
-import { getCustomerOptions } from "@/features/vehicles/queries";
+import type { CustomerOption } from "@/features/vehicles/queries";
 
 const initialState: VehicleActionState = { error: null };
 
-export function VehicleForm() {
-  const [customers, setCustomers] = useState<{ id: string; name: string }[]>(
-    []
-  );
+export function VehicleForm({
+  customers,
+}: {
+  customers: CustomerOption[];
+}) {
   const [state, formAction, pending] = useActionState(
     createVehicleAction,
     initialState
   );
-
-  useEffect(() => {
-    getCustomerOptions().then(setCustomers);
-  }, []);
 
   return (
     <form action={formAction} className="rounded-lg border bg-card p-4 space-y-4">

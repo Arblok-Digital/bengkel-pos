@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { getVehiclesPage } from "@/features/vehicles/queries";
+import { getVehiclesPage, getCustomerOptions } from "@/features/vehicles/queries";
 import { VehicleForm } from "./vehicle-form";
 
 export default async function VehiclesPage() {
@@ -10,6 +10,11 @@ export default async function VehiclesPage() {
   if (!data) {
     redirect("/onboarding");
   }
+
+  const customers =
+    data.businessType !== "toko_bangunan" && data.canWrite
+      ? await getCustomerOptions()
+      : [];
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
@@ -37,7 +42,7 @@ export default async function VehiclesPage() {
       ) : (
         <>
           {data.canWrite ? (
-            <VehicleForm />
+            <VehicleForm customers={customers} />
           ) : (
             <p className="text-muted-foreground text-sm">
               Hanya pemilik/admin yang dapat mengubah kendaraan.

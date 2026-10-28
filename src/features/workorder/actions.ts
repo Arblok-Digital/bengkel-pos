@@ -122,9 +122,7 @@ export async function createWorkOrderAction(
 
   revalidatePath("/bengkel/work-order");
   redirect("/bengkel/work-order");
-}
-
-export async function updateWorkOrderStatusAction(
+}export async function updateWorkOrderStatusAction(
   _prev: WorkOrderActionState,
   formData: FormData
 ): Promise<WorkOrderActionState> {

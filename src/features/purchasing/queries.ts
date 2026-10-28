@@ -549,6 +549,44 @@ export async function getPoItemsForReceiving(
   });
 }
 
+export type PurchaseOrderSelectOption = {
+  id: string;
+  poNo: string;
+  supplierName: string;
+};
+
+/** PO yang statusnya masih bisa diterima (belum selesai). */
+export async function getReceivablePurchaseOrders(): Promise<
+  PurchaseOrderSelectOption[]
+> {
+  const base = await getCatalog();
+  if (!base) return [];
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("purchase_orders")
+    .select(
+      "id, po_no, suppliers(name), status"
+    )
+    .eq("tenant_id", base.tenantId)
+    .in("status", ["draft", "ordered", "partial"])
+    .order("created_at", { ascending: false });
+
+  return (data ?? []).map((row) => {
+    const r = row as unknown as {
+      id: string;
+      po_no: string;
+      suppliers: { name: string | null } | null;
+      status: string;
+    };
+    return {
+      id: r.id,
+      poNo: r.po_no,
+      supplierName: r.suppliers?.name ?? "—",
+    };
+  });
+}
+
 export type PayableStatus = "open" | "partial" | "paid";
 
 export type PayableRow = {
