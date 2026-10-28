@@ -49,3 +49,39 @@ export const receiveGoodsSchema = z.object({
   note: z.string().trim().max(500, "Catatan maksimal 500 karakter").optional(),
   items: z.array(receiveGoodsItemSchema).min(1, "Minimal satu item penerimaan"),
 });
+
+export const payPayableSchema = z.object({
+  tenantId: z.string().uuid("Tenant wajib dipilih"),
+  payableId: z.string().uuid("Hutang wajib dipilih"),
+  clientUuid: z.string().uuid("client_uuid wajib"),
+  amount: z.coerce
+    .number()
+    .int("Nominal harus bilangan bulat rupiah")
+    .positive("Nominal pembayaran harus lebih dari 0")
+    .max(Number.MAX_SAFE_INTEGER, "Nominal terlalu besar"),
+  method: z.enum(["tunai", "transfer", "qris", "debit"]),
+  reference: z
+    .string()
+    .trim()
+    .max(100, "Referensi maksimal 100 karakter")
+    .optional(),
+});
+
+export type PayPayableInput = z.infer<typeof payPayableSchema>;
+
+export const createPayableSchema = z.object({
+  tenantId: z.string().uuid("Tenant wajib dipilih"),
+  outletId: z.string().uuid("Outlet wajib dipilih"),
+  supplierId: z.string().uuid("Supplier wajib dipilih"),
+  purchaseOrderId: z.string().uuid().optional().nullable(),
+  clientUuid: z.string().uuid("client_uuid wajib"),
+  amount: z.coerce
+    .number()
+    .int("Jumlah hutang harus bilangan bulat rupiah")
+    .positive("Jumlah hutang harus lebih dari 0")
+    .max(Number.MAX_SAFE_INTEGER, "Jumlah hutang terlalu besar"),
+  dueDate: z.string().datetime({ offset: true }).optional().nullable(),
+  note: z.string().trim().max(500, "Catatan maksimal 500 karakter").optional(),
+});
+
+export type CreatePayableInput = z.infer<typeof createPayableSchema>;

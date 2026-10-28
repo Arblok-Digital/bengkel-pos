@@ -62,6 +62,9 @@ export default async function AppLayout({
             <Link href="/penerimaan" className="hover:underline">
               Penerimaan
             </Link>
+            <Link href="/hutang" className="hover:underline">
+              Hutang
+            </Link>
             {canManage ? (
               <Link href="/pengaturan" className="hover:underline">
                 Pengaturan

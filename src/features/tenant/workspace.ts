@@ -26,8 +26,8 @@ function modesFor(bt: BusinessType): WorkspaceMode[] {
   return ["bengkel", "toko"];
 }
 
-export function modesForBusinessType(bt: BusinessType): WorkspaceMode[] {
-  return modesFor(bt);
+export async function modesForBusinessType(bt: BusinessType): Promise<WorkspaceMode[]> {
+  return Promise.resolve(modesFor(bt));
 }
 
 export async function getWorkspace(): Promise<Workspace | null> {
