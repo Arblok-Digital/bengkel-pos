@@ -77,6 +77,7 @@ Dilarang menambah dependensi di luar daftar ini tanpa izin. Kalau merasa butuh, 
 npm run dev                      # jalankan app (otomatis menyalakan Supabase lokal)
 npm run db:up                    # nyalakan Supabase lokal (db, auth, rest, kong saja)
 npm run db:down                  # matikan container bengkel-pos, data tetap aman
+npm run db:reset                 # terapkan semua migrasi + seed (wajib sebelum E2E)
 npm run db:status                # container, kesehatan API/relay, pemakaian RAM
 npm run wsl:off                  # db:down lalu matikan seluruh WSL (bebaskan RAM)
 npm run lint
@@ -100,7 +101,7 @@ Sebuah task **belum selesai** sampai semua ini benar:
 1. Semua poin "Selesai bila" task tersebut di `ARCHITECTURE.md` terpenuhi.
 2. `npm run lint && npm run typecheck && npm run test` hijau.
 3. Jika menyentuh DB: `supabase db reset && supabase test db` hijau, dan ada tes SQL untuk RPC/RLS yang baru.
-4. Jika menyentuh layar kasir, shift, penjualan, atau piutang: `npm run e2e` untuk alur terkait hijau.
+4. Jika menyentuh layar kasir, shift, penjualan, piutang, work order, atau struk: jalankan E2E untuk alur terkait sesuai **Bagian 11** dan tempel output mentahnya.
 5. Perubahan sudah di-commit.
 
 **Tempel output mentah** dari perintah verifikasi di laporan akhir. Dilarang menulis "sudah dites" atau "berhasil" tanpa output. Kalau sebuah tes dilewati atau gagal, katakan terang-terangan.
@@ -165,6 +166,91 @@ Jika konteks sudah panjang dan kamu mulai lupa keputusan awal, ringkas kondisi s
 - [ ] Stok menipis ditandai merah+tebal di daftar yang kamu ubah?
 - [ ] Teks UI baru sudah Bahasa Indonesia dan format rupiah benar?
 - [ ] Status koneksi/antrean sinkron tidak rusak oleh perubahan kamu (setelah Fase 10)?
+
+## 11. Aturan Wajib Tes E2E
+
+Bagian ini mengikat. Klaim "E2E hijau" tanpa mengikuti urutan di bawah dianggap **tidak ada bukti**.
+
+### 11.1 Urutan wajib (tidak boleh diacak)
+
+E2E selalu dijalankan **di atas DB yang baru di-reset**, karena spec mengandalkan seed dan data sisa spec lain merusak tes SQL berikutnya.
+
+```bash
+# 1. reset DB (wrapper WSL; versi CLI dibaca dari package.json)
+npm run db:reset
+# 2. tes pgTAP (belum ada skrip npm; jalankan CLI dari WSL sesuai bagian Isolasi)
+wsl bash -lc "cd /tmp && npx --yes supabase@2.122.0 --workdir /mnt/c/Users/ARBLOK/projects/bengkel test db"
+# 3. baru E2E (dev server menyala otomatis lewat playwright.config webServer)
+npx playwright test e2e/<spec-terkait>.spec.ts
+```
+
+- Versi Supabase CLI **wajib sama** dengan yang dikunci di `package.json` (saat ini `^2.122.0`). Jangan mengarang versi lain.
+- `npx playwright test <spec>` untuk alur terkait **wajib**, `npm run e2e` penuh hanya pelengkap.
+- Jangan menjalankan spec terkait berkali-kali sampai kebetulan lulus. Satu kali di DB bersih = bukti. Retry bawaan config (`retries: 1`) **bukan** alasan untuk menganggap lulus; kalau lulus hanya di percobaan kedua, itu **gagal** dan wajib dilaporkan.
+- Jangan menyalakan `--repeat-each`, `--workers > 1`, atau `--retries 0/5` untuk mengubah hasil. Konfigurasi hanya boleh diubah kalau task-nya memang tentang konfigurasi Playwright.
+
+### 11.2 Bukti yang wajib ditempel
+
+Di laporan akhir tempel output mentah, minimal:
+
+```
+Running 1 test using 1 worker
+  ✓  1 e2e/<spec>.spec.ts:<baris>:<kolom> › <nama tes> (<durasi>)
+  1 passed (<durasi total>)
+```
+
+Yang **tidak** dihitung bukti: "sudah dites", "hijau", screenshot tanpa nama spec, ringkasan buatan sendiri, atau output dari sesi/commit lain. Kalau test di-skip (`-`), sebutkan dan jelaskan alasannya.
+
+### 11.3 Cara membuktikan kegagalan itu bawaan (bukan akibat perubahan kamu)
+
+Dilarang menulis "gagal bawaan" tanpa bukti. Untuk setiap kegagalan yang kamu klaim di luar scope, sertakan **ketiganya**:
+
+1. Perintah persis yang dijalankan dan output mentah kegagalannya (nama spec, baris, assertion yang gagal).
+2. Hasil `npx playwright test e2e/<spec>.spec.ts` **sendirian** di DB yang baru di-reset (bukan di tengah suite penuh).
+3. Sebab konkret yang bisa dicek orang lain: tunjuk baris `supabase/seed.sql`, `e2e/helpers.ts`, atau commit yang memperkenalkannya (`git log -S "<teks assertion>"`). "Sepertinya memang begitu dari dulu" bukan bukti.
+
+Kalau ketiganya tidak bisa dipenuhi, perlakukan sebagai **kegagalan task kamu**: perbaiki atau nyatakan task `terblokir`, jangan `selesai`.
+
+### 11.4 Larangan saat tes merah
+
+- Dilarang menghapus, melewati (`test.skip`, `test.fixme`), atau mengomentari tes yang gagal supaya hijau.
+- Dilarang memperlonggar assertion (mis. `toHaveURL("/")` → `toHaveURL(/.*/)`, menambah timeout besar, `expect(...).toBeTruthy()` menggantikan cek nilai).
+- Dilarang mengubah data seed produksi/seed utama hanya supaya tes lulus, kecuali seed itu memang salah dan perbaikannya masuk task yang sama + dijelaskan.
+- Dilarang menghapus langkah di dalam spec (mis. melewati `ensureShift`) untuk menghindari error.
+- Kalau tes gagal karena bug aplikasi: perbaiki aplikasinya, bukan tesnya. Kalau tes gagal karena ekspektasi tes yang sudah usang: perbaiki tesnya sambil menjelaskan di laporan mengapa ekspektasi lama salah.
+
+### 11.5 Aturan menulis spec baru / mengubah spec
+
+- Login **wajib** lewat `helpers.login(page)`. Jangan menyalin isi login ke spec.
+- Jangan assert `toHaveURL("/")`: `/` selalu redirect ke `/(bengkel|toko)`. Pakai pola regex.
+- Data uji wajib unik per run (`Date.now()` / `crypto.randomUUID()` di luar render React) supaya tidak bentrok dengan sisa run sebelumnya.
+- Satu spec harus bisa lulus **sendirian** di DB bersih. Jangan bergantung pada spec lain yang jalan lebih dulu, pada shift yang kebetulan masih terbuka, atau pada stok yang kebetulan tersisa.
+- Bersihkan state yang kamu buka sendiri (`closeShift` bila spec membuka shift) agar suite penuh tidak saling merusak.
+- Untuk alur yang menyentuh stok/uang, assert **nilai** yang terlihat user (total rupiah, status, sisa stok), bukan sekadar "halaman terbuka".
+
+### 11.6 Spec yang diketahui sudah usang (per 28 Okt 2026)
+
+Kegagalan berikut sudah terverifikasi **bawaan** dan **bukan** bukti sebuah task selesai:
+
+| Spec | Sebab |
+| --- | --- |
+| `e2e/stock.spec.ts` | Seed T5.2: stok Semen 500 − 18 = 482, min 5, jadi badge "Aman" padahal spec mengharapkan "Menipis". |
+| `e2e/low-stock.spec.ts` | Sama seperti `stock.spec.ts` (ambang minimum seed tidak lagi memicu status menipis). |
+| `e2e/auth-staff.spec.ts` | Assert `toHaveURL("/")` sebelum redirect selesai (regresi sejak commit `ca59927`). |
+| `e2e/catalog.spec.ts` | Mencari link "Katalog" yang tidak ada di mode bengkel; juga `toHaveURL("/")`. |
+| `e2e/sale-admin.spec.ts` | Lulus sendirian; gagal di suite penuh karena state shift/stok dari spec sebelumnya. |
+
+Aturan: kalau task kamu menyentuh area spec di tabel ini, **kamu wajib memperbaikinya di task itu** (test lama yang salah, bukan fitur). Kalau tidak menyentuh, laporkan sebagai catatan di luar scope beserta output mentahnya.
+
+### 11.7 Ringkasan yang bisa dicek mesin
+
+Sebelum commit, jawab di laporan:
+
+- [ ] `npm run db:reset` dijalankan setelah perubahan migrasi terakhir?
+- [ ] `supabase test db` hijau (tempel `Files=..., Tests=..., Result: PASS`)?
+- [ ] `npx playwright test e2e/<spec terkait>` hijau di DB bersih, tempel outputnya?
+- [ ] Semua kegagalan lain yang terlihat sudah dibuktikan bawaan (11.3) atau dilaporkan `terblokir`?
+- [ ] Tidak ada assertion yang diperlonggar, tes dihapus, atau `test.skip` baru?
 
 <!-- BEGIN:nextjs-agent-rules -->
 
