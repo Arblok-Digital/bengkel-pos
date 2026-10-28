@@ -11,6 +11,7 @@ import {
   Settings,
   ShoppingCart,
   Store,
+  Tags,
   Truck,
   UsersRound,
   Wrench,
@@ -35,6 +36,7 @@ const sharedOperations: NavItem[] = [
 
 const inventoryItems: NavItem[] = [
   { href: "/produk", label: "Produk", icon: PackageSearch },
+  { href: "/katalog", label: "Katalog", icon: Tags },
   { href: "/stok", label: "Stok", icon: Boxes },
   { href: "/pembelian", label: "Pembelian", icon: Truck },
   { href: "/penerimaan", label: "Penerimaan", icon: ClipboardList },

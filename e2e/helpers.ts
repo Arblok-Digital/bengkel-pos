@@ -37,3 +37,27 @@ export async function closeShift(page: Page) {
   await page.getByRole("button", { name: "Tutup kasir" }).click();
   await expect(page).toHaveURL(/closed=1/);
 }
+
+/**
+ * Ubah stok minimum produk lewat UI, lalu kembalikan nilai sebelumnya.
+ * Dipakai untuk menyiapkan kondisi "stok menipis" tanpa bergantung pada seed
+ * dan tanpa mengubah qty stok yang dipakai spec penjualan.
+ */
+export async function setProductMinStock(
+  page: Page,
+  productName: string,
+  minStock: string
+): Promise<string> {
+  await page.goto("/produk");
+  const row = page.getByRole("row", { name: new RegExp(productName) });
+  await row.getByRole("link", { name: "Ubah" }).click();
+  await expect(page).toHaveURL(/\/produk\/[^/]+$/);
+
+  const input = page.getByLabel("Stok minimum");
+  const previous = await input.inputValue();
+  await input.fill(minStock);
+  await page.getByRole("button", { name: "Simpan perubahan" }).click();
+  await expect(page).toHaveURL("/produk");
+
+  return previous;
+}

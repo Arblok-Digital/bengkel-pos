@@ -1,15 +1,13 @@
 import { test, expect } from "@playwright/test";
 
+import { login } from "./helpers";
+
 test("owner menambah kategori dan satuan", async ({ page }) => {
   const suffix = Date.now().toString().slice(-6);
   const category = `Kategori ${suffix}`;
   const unit = `satuan${suffix}`;
 
-  await page.goto("/login");
-  await page.getByLabel("Email").fill("admin@bengkel.test");
-  await page.getByLabel("Kata sandi").fill("bengkel123");
-  await page.getByRole("button", { name: "Masuk" }).click();
-  await expect(page).toHaveURL("/");
+  await login(page);
 
   await page.getByRole("link", { name: "Katalog" }).click();
   await expect(page).toHaveURL("/katalog");

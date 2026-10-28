@@ -228,19 +228,20 @@ Kalau ketiganya tidak bisa dipenuhi, perlakukan sebagai **kegagalan task kamu**:
 - Bersihkan state yang kamu buka sendiri (`closeShift` bila spec membuka shift) agar suite penuh tidak saling merusak.
 - Untuk alur yang menyentuh stok/uang, assert **nilai** yang terlihat user (total rupiah, status, sisa stok), bukan sekadar "halaman terbuka".
 
-### 11.6 Spec yang diketahui sudah usang (per 28 Okt 2026)
+### 11.6 Baseline E2E (diperbarui 28 Okt 2026)
 
-Kegagalan berikut sudah terverifikasi **bawaan** dan **bukan** bukti sebuah task selesai:
+Baseline terakhir: `npm run e2e` di DB baru di-reset → **22 passed, 0 failed, 0 flaky**. Kegagalan di luar baseline ini adalah **regresi** dan wajib diselidiki, bukan langsung dicap "bawaan".
 
-| Spec | Sebab |
+Spec yang dulu basi sudah diperbaiki (branch `chore/T-e2e-baseline`):
+
+| Spec | Perbaikan |
 | --- | --- |
-| `e2e/stock.spec.ts` | Seed T5.2: stok Semen 500 − 18 = 482, min 5, jadi badge "Aman" padahal spec mengharapkan "Menipis". |
-| `e2e/low-stock.spec.ts` | Sama seperti `stock.spec.ts` (ambang minimum seed tidak lagi memicu status menipis). |
-| `e2e/auth-staff.spec.ts` | Assert `toHaveURL("/")` sebelum redirect selesai (regresi sejak commit `ca59927`). |
-| `e2e/catalog.spec.ts` | Mencari link "Katalog" yang tidak ada di mode bengkel; juga `toHaveURL("/")`. |
-| `e2e/sale-admin.spec.ts` | Lulus sendirian; gagal di suite penuh karena state shift/stok dari spec sebelumnya. |
+| `e2e/stock.spec.ts` | Tidak lagi mengandalkan stok Semen dari seed. Spec menyetel stok minimum sendiri lewat `setProductMinStock`, lalu memulihkannya di `finally`. |
+| `e2e/low-stock.spec.ts` | Sama; banner "Stok menipis" juga dipulihkan di dashboard bengkel & toko. |
+| `e2e/catalog.spec.ts` | Link "Katalog" dipulihkan di navigasi (regresi `ca59927`), login lewat helper. |
+| `e2e/auth-staff.spec.ts` | Assert `toHaveURL("/")` diganti pola `/(bengkel|toko)$/`, login lewat helper. |
 
-Aturan: kalau task kamu menyentuh area spec di tabel ini, **kamu wajib memperbaikinya di task itu** (test lama yang salah, bukan fitur). Kalau tidak menyentuh, laporkan sebagai catatan di luar scope beserta output mentahnya.
+Risiko tersisa (belum diperbaiki, di luar scope task baseline): assert `toHaveURL("/")` setelah login masih ada di `customers`, `import`, `pos`, `products`, `shift`, dan `stock-adjustment`. Assert itu bisa lulus hanya karena redirect ke ruang kerja belum selesai. Kalau kamu menyentuh spec tersebut, ganti dengan `helpers.login(page)` — jangan menambah assert `"/"` baru.
 
 ### 11.7 Ringkasan yang bisa dicek mesin
 

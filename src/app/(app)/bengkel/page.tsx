@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { CarFront, ClipboardList, ShoppingCart, Wrench } from "lucide-react";
 
+import { getLowStock } from "@/features/inventory/queries";
+import { LowStockBanner } from "@/features/inventory/components/low-stock-banner";
 import { getWorkspace } from "@/features/tenant/workspace";
 
 const quickActions = [
@@ -25,7 +27,10 @@ const quickActions = [
 ] as const;
 
 export default async function BengkelDashboardPage() {
-  const workspace = await getWorkspace();
+  const [workspace, lowStock] = await Promise.all([
+    getWorkspace(),
+    getLowStock(),
+  ]);
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-8">
@@ -45,6 +50,8 @@ export default async function BengkelDashboardPage() {
           </div>
         </div>
       </section>
+
+      <LowStockBanner data={lowStock} />
 
       <section>
         <h2 className="text-lg font-semibold">Aksi cepat</h2>

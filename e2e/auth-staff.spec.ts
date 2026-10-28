@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { login } from "./helpers";
+
 test("owner mengelola staf, kasir tidak bisa membuka pengaturan", async ({
   page,
 }) => {
@@ -7,11 +9,7 @@ test("owner mengelola staf, kasir tidak bisa membuka pengaturan", async ({
   const staffPassword = "kasir12345";
 
   // Login sebagai owner (seed)
-  await page.goto("/login");
-  await page.getByLabel("Email").fill("admin@bengkel.test");
-  await page.getByLabel("Kata sandi").fill("bengkel123");
-  await page.getByRole("button", { name: "Masuk" }).click();
-  await expect(page).toHaveURL("/");
+  await login(page);
 
   // Owner bisa membuka pengaturan
   await page.getByRole("link", { name: "Pengaturan" }).click();
@@ -42,10 +40,10 @@ test("owner mengelola staf, kasir tidak bisa membuka pengaturan", async ({
   await page.getByLabel("Email").fill(staffEmail);
   await page.getByLabel("Kata sandi").fill(staffPassword);
   await page.getByRole("button", { name: "Masuk" }).click();
-  await expect(page).toHaveURL("/");
+  await expect(page).toHaveURL(/\/(bengkel|toko)$/);
 
   await expect(page.getByRole("link", { name: "Pengaturan" })).toHaveCount(0);
 
   await page.goto("/pengaturan");
-  await expect(page).toHaveURL("/");
+  await expect(page).toHaveURL(/\/(bengkel|toko)$/);
 });
