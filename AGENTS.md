@@ -12,6 +12,7 @@ Dokumen desain lengkap ada di `ARCHITECTURE.md`. File ini adalah aturan kerja ka
 3. Cek `git status` dan `git log -5` untuk tahu kondisi terakhir.
 4. Kerjakan **satu task** (misal `T4.2`). Bukan dua, bukan "sekalian fase berikutnya".
 5. Tulis rencana singkat (maksimal 8 baris) sebelum mengubah file.
+6. Baca **Bagian 11** sebelum mulai. Kalau task menyentuh area di tabel 11.1, E2E **wajib** dijalankan dan outputnya ditempel — bukan opsional.
 
 ---
 
@@ -171,6 +172,8 @@ Jika konteks sudah panjang dan kamu mulai lupa keputusan awal, ringkas kondisi s
 
 Bagian ini mengikat. Klaim "E2E hijau" tanpa mengikuti urutan di bawah dianggap **tidak ada bukti**.
 
+**E2E bukan opsional.** Kalau task menyentuh salah satu area di tabel 11.1, melewati E2E berarti task berstatus **sebagian**, bukan **selesai** — sekalipun lint/typecheck/unit test hijau.
+
 ### 11.1 Urutan wajib (tidak boleh diacak)
 
 E2E selalu dijalankan **di atas DB yang baru di-reset**, karena spec mengandalkan seed dan data sisa spec lain merusak tes SQL berikutnya.
@@ -188,6 +191,25 @@ npx playwright test e2e/<spec-terkait>.spec.ts
 - `npx playwright test <spec>` untuk alur terkait **wajib**, `npm run e2e` penuh hanya pelengkap.
 - Jangan menjalankan spec terkait berkali-kali sampai kebetulan lulus. Satu kali di DB bersih = bukti. Retry bawaan config (`retries: 1`) **bukan** alasan untuk menganggap lulus; kalau lulus hanya di percobaan kedua, itu **gagal** dan wajib dilaporkan.
 - Jangan menyalakan `--repeat-each`, `--workers > 1`, atau `--retries 0/5` untuk mengubah hasil. Konfigurasi hanya boleh diubah kalau task-nya memang tentang konfigurasi Playwright.
+
+**Peta area → spec (wajib dipakai, jangan menebak):**
+
+| Area yang kamu ubah | Spec yang wajib dijalankan |
+| --- | --- |
+| Kasir, keranjang, pembayaran, hold | `e2e/pos.spec.ts`, `e2e/payment.spec.ts` |
+| Shift, modal awal, tutup kasir | `e2e/shift.spec.ts`, `e2e/pos.spec.ts` |
+| Penjualan, retur, void, struk | `e2e/sale-admin.spec.ts`, `e2e/receipt.spec.ts` |
+| Kredit/tempo, piutang, cicilan | `e2e/credit-sale.spec.ts`, `e2e/receivables.spec.ts` |
+| Stok, penyesuaian, opname, stok menipis | `e2e/stock.spec.ts`, `e2e/low-stock.spec.ts`, `e2e/stock-adjustment.spec.ts` |
+| Work order, kendaraan | `e2e/work-order.spec.ts` |
+| Produk, katalog, impor CSV | `e2e/products.spec.ts`, `e2e/catalog.spec.ts`, `e2e/import.spec.ts` |
+| Pelanggan, pemasok | `e2e/customers.spec.ts` |
+| Auth, staf, pengaturan, role | `e2e/auth-staff.spec.ts` |
+| Offline, Dexie, outbox, PWA | `e2e/offline-sale.spec.ts`, `e2e/offline-catalog.spec.ts`, `e2e/offline-midflight.spec.ts`, `e2e/pwa.spec.ts` |
+
+- Jika area yang kamu sentuh **belum punya spec**, kamu wajib menulis spec baru untuk alur utamanya — bukan menandai "tidak ada spec" lalu selesai.
+- Jika satu perubahan menyentuh beberapa area, jalankan gabungan spec-nya dalam satu perintah.
+- Perubahan murni dokumentasi (mis. file ini) tidak wajib E2E; sebutkan alasannya di laporan.
 
 ### 11.2 Bukti yang wajib ditempel
 
