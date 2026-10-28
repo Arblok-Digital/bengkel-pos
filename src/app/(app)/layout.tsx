@@ -1,10 +1,58 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import {
+  Boxes,
+  CarFront,
+  ClipboardList,
+  HandCoins,
+  LayoutDashboard,
+  PackageSearch,
+  ReceiptText,
+  Settings,
+  ShoppingCart,
+  Store,
+  Truck,
+  UsersRound,
+  Wrench,
+} from "lucide-react";
 
 import { hasManagerRole } from "@/features/staff/queries";
 import { createClient } from "@/lib/supabase/server";
 import { getWorkspace } from "@/features/tenant/workspace";
 import { LogoutButton } from "./logout-button";
+
+type NavItem = {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+};
+
+const sharedOperations: NavItem[] = [
+  { href: "/kasir", label: "Kasir", icon: ShoppingCart },
+  { href: "/penjualan", label: "Penjualan", icon: ReceiptText },
+  { href: "/piutang", label: "Piutang", icon: HandCoins },
+];
+
+const inventoryItems: NavItem[] = [
+  { href: "/produk", label: "Produk", icon: PackageSearch },
+  { href: "/stok", label: "Stok", icon: Boxes },
+  { href: "/pembelian", label: "Pembelian", icon: Truck },
+  { href: "/penerimaan", label: "Penerimaan", icon: ClipboardList },
+  { href: "/hutang", label: "Hutang", icon: HandCoins },
+];
+
+function NavigationLink({ item }: { item: NavItem }) {
+  const Icon = item.icon;
+  return (
+    <Link
+      href={item.href}
+      className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+    >
+      <Icon className="size-4" aria-hidden />
+      {item.label}
+    </Link>
+  );
+}
 
 export default async function AppLayout({
   children,
@@ -24,84 +72,65 @@ export default async function AppLayout({
   const workspace = await getWorkspace();
 
   return (
-    <div className="min-h-screen">
-      <header className="flex items-center justify-between gap-4 border-b px-6 py-3 print:hidden">
-        <span className="font-semibold">Kasir Bengkel &amp; Toko Bangunan</span>
-        <div className="flex items-center gap-4 text-sm">
-          <nav className="flex items-center gap-4">
-            <Link href="/" className="hover:underline">
-              Beranda
-            </Link>
-            <Link href="/kasir" className="hover:underline">
-              Kasir
-            </Link>
-            <Link href="/penjualan" className="hover:underline">
-              Penjualan
-            </Link>
-            <Link href="/piutang" className="hover:underline">
-              Piutang
-            </Link>
-            <Link href="/katalog" className="hover:underline">
-              Katalog
-            </Link>
-            <Link href="/produk" className="hover:underline">
-              Produk
-            </Link>
-            <Link href="/stok" className="hover:underline">
-              Stok
-            </Link>
-            <Link href="/pelanggan" className="hover:underline">
-              Pelanggan
-            </Link>
-            <Link href="/pemasok" className="hover:underline">
-              Pemasok
-            </Link>
-            <Link href="/pembelian" className="hover:underline">
-              Pembelian
-            </Link>
-            <Link href="/penerimaan" className="hover:underline">
-              Penerimaan
-            </Link>
-            <Link href="/hutang" className="hover:underline">
-              Hutang
-            </Link>
-            {workspace?.businessType !== "toko_bangunan" ? (
+    <div className="min-h-screen bg-muted/20">
+      <header className="border-b bg-background print:hidden">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <Link
+            href={workspace?.mode === "bengkel" ? "/bengkel" : "/toko"}
+            className="flex items-center gap-2 font-semibold"
+          >
+            {workspace?.mode === "bengkel" ? (
+              <Wrench className="size-5" aria-hidden />
+            ) : (
+              <Store className="size-5" aria-hidden />
+            )}
+            {workspace?.mode === "bengkel" ? "Bengkel" : "Toko Bangunan"}
+          </Link>
+          <div className="flex items-center gap-2">
+            {workspace ? (
+              <Link
+                href="/pilih-usaha"
+                className="inline-flex min-h-11 items-center rounded-lg border px-3 text-sm font-medium hover:bg-muted"
+              >
+                {workspace.tenantName}
+              </Link>
+            ) : null}
+            <LogoutButton />
+          </div>
+        </div>
+        {workspace ? (
+          <nav
+            aria-label="Navigasi utama"
+            className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-3 pb-2 sm:px-5"
+          >
+            <NavigationLink
+              item={{
+                href: workspace.mode === "bengkel" ? "/bengkel" : "/toko",
+                label: "Beranda",
+                icon: LayoutDashboard,
+              }}
+            />
+            {workspace.mode === "bengkel" ? (
               <>
-                <Link href="/kendaraan" className="hover:underline">
-                  Kendaraan
-                </Link>
-                {workspace?.mode === "bengkel" ? (
-                  <Link href="/bengkel/work-order" className="hover:underline">
-                    Work Order
-                  </Link>
-                ) : null}
+                <NavigationLink item={{ href: "/bengkel/work-order", label: "Work Order", icon: ClipboardList }} />
+                <NavigationLink item={{ href: "/kendaraan", label: "Kendaraan", icon: CarFront }} />
               </>
             ) : null}
+            {sharedOperations.map((item) => (
+              <NavigationLink key={item.href} item={item} />
+            ))}
+            {inventoryItems.map((item) => (
+              <NavigationLink key={item.href} item={item} />
+            ))}
+            <NavigationLink item={{ href: "/pelanggan", label: "Pelanggan", icon: UsersRound }} />
+            <NavigationLink item={{ href: "/pemasok", label: "Pemasok", icon: Truck }} />
             {canManage ? (
-              <Link href="/pengaturan" className="hover:underline">
-                Pengaturan
-              </Link>
-            ) : null}
-            {workspace?.mode === "bengkel" ? (
-              <Link href="/bengkel" className="hover:underline">
-                Bengkel
-              </Link>
-            ) : null}
-            {workspace?.mode === "toko" ? (
-              <Link href="/toko" className="hover:underline">
-                Toko Bangunan
-              </Link>
+              <NavigationLink item={{ href: "/pengaturan", label: "Pengaturan", icon: Settings }} />
             ) : null}
           </nav>
-          {workspace ? (
-            <Link href="/pilih-usaha" className="rounded border px-2 py-1 text-xs">
-              {workspace.tenantName} · {workspace.mode === "bengkel" ? "Bengkel" : "Toko"}
-            </Link>
-          ) : null}
-          <LogoutButton />
-        </div>
+        ) : null}
       </header>
-      <main className="p-6 print:p-0">{children}</main>
+      <main className="mx-auto max-w-7xl p-4 sm:p-6 print:p-0">{children}</main>
     </div>
   );
 }

@@ -86,7 +86,7 @@ export async function setWorkspaceAction(formData: FormData) {
     sameSite: "lax",
   });
 
-  redirect("/");
+  redirect(safeMode === "bengkel" ? "/bengkel" : "/toko");
 }
 
 export async function clearWorkspaceAction() {
