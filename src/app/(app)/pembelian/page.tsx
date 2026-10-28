@@ -2,6 +2,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getPurchaseOrdersPage } from "@/features/purchasing/queries";
+import {
+  getOutletOptions,
+  getProductOptions,
+  getSupplierOptions,
+  getUnitOptions,
+} from "@/features/purchasing/queries";
 import { CreatePurchaseOrderForm } from "./create";
 
 export default async function PurchaseOrdersPage() {
@@ -10,6 +16,13 @@ export default async function PurchaseOrdersPage() {
   if (!data) {
     redirect("/onboarding");
   }
+
+  const [outlets, suppliers, products, units] = await Promise.all([
+    getOutletOptions(),
+    getSupplierOptions(),
+    getProductOptions(),
+    getUnitOptions(),
+  ]);
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
@@ -28,7 +41,13 @@ export default async function PurchaseOrdersPage() {
       </div>
 
       {data.canWrite ? (
-        <CreatePurchaseOrderForm tenantId={data.tenantId} />
+        <CreatePurchaseOrderForm
+          tenantId={data.tenantId}
+          outlets={outlets}
+          suppliers={suppliers}
+          products={products}
+          units={units}
+        />
       ) : (
         <p className="text-muted-foreground text-sm">
           Hanya pemilik/admin yang dapat membuat PO.

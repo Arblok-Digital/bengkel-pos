@@ -1,18 +1,17 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
   createPurchaseOrderAction,
   type PurchaseOrderActionState,
 } from "@/features/purchasing/actions";
-import {
-  getOutletOptions,
-  getProductOptions,
-  getSupplierOptions,
-  getUnitOptions,
-} from "@/features/purchasing/queries";
+
+type OutletOption = { id: string; name: string };
+type SupplierOption = { id: string; name: string };
+type ProductOption = { id: string; name: string; baseUnitId: string | null };
+type UnitOption = { id: string; name: string };
 
 const initialState: PurchaseOrderActionState = {
   error: null,
@@ -31,19 +30,23 @@ type Item = {
 
 export function CreatePurchaseOrderForm({
   tenantId,
+  outlets,
+  suppliers,
+  products,
+  units,
 }: {
   tenantId: string;
+  outlets: OutletOption[];
+  suppliers: SupplierOption[];
+  products: ProductOption[];
+  units: UnitOption[];
 }) {
-  const [outlets, setOutlets] = useState<{ id: string; name: string }[]>([]);
-  const [suppliers, setSuppliers] = useState<{ id: string; name: string }[]>(
-    []
-  );
-  const [products, setProducts] = useState<{
-    id: string;
-    name: string;
-    baseUnitId: string | null;
-  }[]>([]);
-  const [units, setUnits] = useState<{ id: string; name: string }[]>([]);
+  const [outletOptions] = useState<OutletOption[]>(outlets);
+  const [supplierOptions] = useState<SupplierOption[]>(suppliers);
+  const [productOptions] = useState<ProductOption[]>(products);
+  const [unitOptions] = useState<UnitOption[]>(units);
+  const [supplierId, setSupplierId] = useState("");
+  const [outletId, setOutletId] = useState("");
   const [items, setItems] = useState<Item[]>([
     {
       productId: "",
@@ -55,16 +58,6 @@ export function CreatePurchaseOrderForm({
       note: "",
     },
   ]);
-  const [supplierId, setSupplierId] = useState("");
-  const [outletId, setOutletId] = useState("");
-
-  useEffect(() => {
-    getOutletOptions().then(setOutlets);
-    getSupplierOptions().then(setSuppliers);
-    getProductOptions().then(setProducts);
-    getUnitOptions().then(setUnits);
-  }, []);
-
   const [state, formAction, pending] = useActionState(
     createPurchaseOrderAction,
     initialState
@@ -107,7 +100,7 @@ export function CreatePurchaseOrderForm({
             className="h-9 rounded-md border border-input bg-background px-2"
           >
             <option value="">Pilih outlet</option>
-            {outlets.map((o) => (
+            {outletOptions.map((o) => (
               <option key={o.id} value={o.id}>{o.name}</option>
             ))}
           </select>
@@ -124,7 +117,7 @@ export function CreatePurchaseOrderForm({
             className="h-9 rounded-md border border-input bg-background px-2"
           >
             <option value="">Pilih supplier</option>
-            {suppliers.map((s) => (
+            {supplierOptions.map((s) => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
           </select>
@@ -144,7 +137,7 @@ export function CreatePurchaseOrderForm({
         <h3 className="text-sm font-medium mb-2">Item PO</h3>
         <div className="space-y-2">
           {items.map((item, index) => {
-            const product = products.find((p) => p.id === item.productId);
+            const product = productOptions.find((p) => p.id === item.productId);
             return (
               <div key={index} className="grid gap-2 sm:grid-cols-5 items-end">
                 <select
@@ -153,7 +146,7 @@ export function CreatePurchaseOrderForm({
                   value={item.productId}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                     const pid = e.target.value;
-                    const p = products.find((x) => x.id === pid);
+                    const p = productOptions.find((x) => x.id === pid);
                     setItems((prev) =>
                       prev.map((it, i) =>
                         i === index
@@ -171,7 +164,7 @@ export function CreatePurchaseOrderForm({
                   className="h-9 rounded-md border border-input bg-background px-2 text-sm"
                 >
                   <option value="">Pilih produk</option>
-                  {products.map((p) => (
+                  {productOptions.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
                     </option>
@@ -194,7 +187,7 @@ export function CreatePurchaseOrderForm({
                           ? {
                               ...it,
                               unitId: e.target.value,
-                              unitName: units.find(
+                              unitName: unitOptions.find(
                                 (u) => u.id === e.target.value
                               )?.name ?? "",
                             }
@@ -204,7 +197,7 @@ export function CreatePurchaseOrderForm({
                   className="h-9 rounded-md border border-input bg-background px-2 text-sm"
                 >
                   <option value="">Satuan</option>
-                  {units.map((u) => (
+                  {unitOptions.map((u) => (
                     <option key={u.id} value={u.id}>{u.name}</option>
                   ))}
                 </select>
